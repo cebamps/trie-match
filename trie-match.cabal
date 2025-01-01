@@ -1,0 +1,30 @@
+cabal-version:      3.0
+name:               trie-match
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            NONE
+author:             Cédric Bamps
+-- copyright:
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall
+
+executable trie-match
+    import:           warnings
+    main-is:          Main.hs
+    other-modules:
+      , Parse
+      , Pattern
+    -- other-extensions:
+    build-depends:
+      , base ^>=4.18.2.1
+      , aeson
+      , attoparsec
+      , bytestring
+      , text
+    hs-source-dirs:   app
+    default-language: Haskell2010
