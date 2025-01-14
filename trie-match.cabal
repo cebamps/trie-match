@@ -17,8 +17,11 @@ executable trie-match
     import:           warnings
     main-is:          Main.hs
     other-modules:
+      , CLI
       , Parse
       , Pattern
+      , Search
+      , Trie
     -- other-extensions:
     build-depends:
       , base ^>=4.18.2.1
@@ -26,5 +29,6 @@ executable trie-match
       , attoparsec
       , bytestring
       , text
+      , trie-simple
     hs-source-dirs:   app
     default-language: Haskell2010
