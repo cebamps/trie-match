@@ -3,6 +3,7 @@
 module Trie where
 
 import Data.Text (Text)
+import Data.Trie.Map (toMap)
 import qualified Data.Trie.Map as T
 import Pattern (Pattern, PatternSegment)
 
@@ -21,3 +22,6 @@ buildPatternTrie = buildTrie
 
 buildLiteralTrie :: [[Text]] -> Trie Text
 buildLiteralTrie = buildTrie
+
+dump :: (Show a) => Trie a -> String
+dump = show . toMap

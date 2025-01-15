@@ -25,9 +25,9 @@ executable trie-match
     -- other-extensions:
     build-depends:
       , base ^>=4.18.2.1
-      , aeson
       , attoparsec
       , bytestring
+      , containers
       , text
       , trie-simple
     hs-source-dirs:   app
