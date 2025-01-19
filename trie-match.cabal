@@ -1,28 +1,22 @@
 cabal-version:      3.0
 name:               trie-match
 version:            0.1.0.0
--- synopsis:
--- description:
 license:            NONE
 author:             Cédric Bamps
--- copyright:
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
--- extra-source-files:
 
 common warnings
     ghc-options: -Wall
 
-executable trie-match
+library
     import:           warnings
-    main-is:          Main.hs
-    other-modules:
+    exposed-modules:
       , CLI
       , Parse
       , Pattern
       , Search
       , Trie
-    -- other-extensions:
     build-depends:
       , base ^>=4.18.2.1
       , attoparsec
@@ -30,5 +24,26 @@ executable trie-match
       , containers
       , text
       , trie-simple
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable trie-match
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:
+      , base ^>=4.18.2.1
+      , trie-match
     hs-source-dirs:   app
     default-language: Haskell2010
+
+test-suite trie-match-test
+    import:           warnings
+    main-is:          test.hs
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    default-language: Haskell2010
+    build-depends:
+      , base ^>=4.18.2.1
+      , trie-match
+      , tasty
+      , tasty-hunit
