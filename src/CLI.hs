@@ -5,7 +5,7 @@ module CLI where
 
 import qualified Data.Text as T (lines, splitOn)
 import qualified Data.Text.IO as T
-import Trie (buildLiteralTrie, dump, buildPatternTrie)
+import Trie (buildLiteralTrie, buildPatternTrie)
 import Data.Text (Text)
 import System.Environment (getArgs)
 import Parse (parsePattern)
@@ -20,8 +20,8 @@ run = do
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
 
-  putStrLn $ dump queryTrie
-  putStrLn $ dump patternTrie
+  print queryTrie
+  print patternTrie
 
   where
     liftEither :: (Show e) => Either e a -> IO a
