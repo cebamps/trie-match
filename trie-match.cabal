@@ -23,7 +23,6 @@ library
       , bytestring
       , containers
       , text
-      , trie-simple
     hs-source-dirs:   src
     default-language: Haskell2010
 

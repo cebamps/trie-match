@@ -2,26 +2,43 @@
 
 module Trie where
 
-import Data.Text (Text)
-import Data.Trie.Map (toMap)
-import qualified Data.Trie.Map as T
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Pattern (Pattern, PatternSegment)
+import Data.Text (Text)
+import Data.Maybe (fromMaybe)
+import Data.List (foldl')
 
-type Trie a = T.TMap a ()
+data Trie c a = Trie (Maybe a) (Map c (Trie c a)) deriving (Show)
 
-parseTrie :: (Ord a) => (Text -> Either e [a]) -> [Text] -> Either e (Trie a)
-parseTrie parse = fmap T.fromList . traverse parseKV
+mapVal :: (Maybe a -> Maybe a) -> Trie c a -> Trie c a
+mapVal f (Trie x m) = Trie (f x) m
+
+setVal :: a -> Trie c a -> Trie c a
+setVal = mapVal . const . Just
+
+mapChld :: (Map c (Trie c a) -> Map c (Trie c a)) -> Trie c a -> Trie c a
+mapChld f (Trie x m) = Trie x (f m)
+
+insert :: (Ord c) => [c] -> a -> Trie c a -> Trie c a
+insert cs x = foldr go (setVal x) cs
   where
-    parseKV = fmap (,()) . parse
+    go c ins = mapChld $ Map.alter (Just . ins . fromMaybe empty) c
 
-buildTrie :: (Ord a) => [[a]] -> Trie a
-buildTrie = T.fromList . fmap (,())
+empty :: Trie c a
+empty = Trie Nothing Map.empty
 
-buildPatternTrie :: [Pattern] -> Trie PatternSegment
-buildPatternTrie = buildTrie
+fromList :: Ord c => [([c],a)] -> Trie c a
+fromList = foldl' (\t (k,v) -> insert k v t) empty
 
-buildLiteralTrie :: [[Text]] -> Trie Text
-buildLiteralTrie = buildTrie
+fromList' :: Ord c => [[c]] -> Trie c ()
+fromList' = fromList . fmap (,())
 
-dump :: (Show a) => Trie a -> String
-dump = show . toMap
+buildPatternTrie :: [Pattern] -> Trie PatternSegment ()
+buildPatternTrie = fromList'
+
+buildLiteralTrie :: [[Text]] -> Trie Text ()
+buildLiteralTrie = fromList'
+
+parseTrie :: (Ord c) => (Text -> Either e [c]) -> [Text] -> Either e (Trie c ())
+parseTrie parse = fmap fromList' . traverse parse
