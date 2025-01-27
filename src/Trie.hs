@@ -13,7 +13,11 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Pattern (Pattern, PatternSegment)
 
-data Trie c a = Trie (Maybe a) (Map c (Trie c a)) deriving (Functor, Show)
+data Trie c a = Trie
+  { tValue :: Maybe a,
+    tChildren :: Map c (Trie c a)
+  }
+  deriving (Functor, Show)
 
 mapVal :: (Maybe a -> Maybe a) -> Trie c a -> Trie c a
 mapVal f (Trie x m) = Trie (f x) m
@@ -38,6 +42,12 @@ fromList = foldl' (\t (k,v) -> insert k v t) empty
 fromList' :: Ord c => [[c]] -> Trie c ()
 fromList' = fromList . fmap (,())
 
+-- prune the trie to keep just one child
+justChild :: (Ord c) => c -> Trie c a -> Maybe (Trie c a)
+justChild k (Trie x m) = case Map.lookup k m of
+  Nothing -> Nothing
+  Just t' -> Just $ Trie x (Map.singleton k t')
+
 buildPatternTrie :: [Pattern] -> Trie PatternSegment ()
 buildPatternTrie = fromList'
 
@@ -46,6 +56,9 @@ buildLiteralTrie = fromList'
 
 parseTrie :: (Ord c) => (Text -> Either e [c]) -> [Text] -> Either e (Trie c ())
 parseTrie parse = fmap fromList' . traverse parse
+
+children :: Trie c a -> [(c, Trie c a)]
+children = Map.toList . tChildren
 
 -- recursion schemes
 
