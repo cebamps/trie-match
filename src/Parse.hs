@@ -1,6 +1,7 @@
 module Parse where
 
 import Control.Applicative ((<|>))
+import Data.Attoparsec.Combinator (lookAhead)
 import Data.Attoparsec.Text
   ( Parser,
     char,
@@ -10,6 +11,7 @@ import Data.Attoparsec.Text
     sepBy',
     takeWhile1,
   )
+import Data.Functor (void)
 import Data.Text (Text)
 import Pattern (GlobSegment (..), Pattern, PatternSegment (..))
 
@@ -25,7 +27,9 @@ pattern :: Parser Pattern
 pattern = patternSegment `sepBy'` char '.'
 
 patternSegment :: Parser PatternSegment
-patternSegment = (PStar <$ char '*') <|> (PGlob <$> glob)
+patternSegment = (PStar <$ loneStar) <|> (PGlob <$> glob)
+  where
+    loneStar = char '*' <* lookAhead (void (char '.') <|> endOfInput)
 
 parsePattern :: Text -> Either String Pattern
 parsePattern = parseOnly (pattern <* endOfInput)
