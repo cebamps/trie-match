@@ -25,13 +25,10 @@ library
       , recursion-schemes
       , text
     hs-source-dirs:   src
-    default-language: Haskell2010
+    default-language: GHC2021
     default-extensions:
-      , DeriveFunctor
       , LambdaCase
       , OverloadedStrings
-      , ScopedTypeVariables
-      , TupleSections
       , TypeFamilies
 
 executable trie-match
@@ -41,14 +38,14 @@ executable trie-match
       , base ^>=4.18.2.1
       , trie-match
     hs-source-dirs:   app
-    default-language: Haskell2010
+    default-language: GHC2021
 
 test-suite trie-match-test
     import:           warnings
     main-is:          test.hs
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
-    default-language: Haskell2010
+    default-language: GHC2021
     build-depends:
       , base ^>=4.18.2.1
       , trie-match
