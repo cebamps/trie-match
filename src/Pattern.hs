@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Pattern where
 
 import Control.Monad (void)
@@ -11,6 +13,7 @@ import Data.Attoparsec.Text
   )
 import Data.Either (isRight)
 import Data.Text (Text)
+import qualified Data.Text as T
 
 type Pattern = [PatternSegment]
 
@@ -29,3 +32,17 @@ globSegmentAsParser = foldr prepend endOfInput
 
 globMatch :: Glob -> Text -> Bool
 globMatch g = isRight . parseOnly (globSegmentAsParser g)
+
+globToString :: Glob -> Text
+globToString = T.concat . fmap gsToString
+  where
+    gsToString :: GlobSegment -> Text
+    gsToString GStar = "*"
+    gsToString (GLit x) = x
+
+patternToString :: Pattern -> Text
+patternToString = T.intercalate "." . fmap psToString
+  where
+    psToString :: PatternSegment -> Text
+    psToString PStar = "*"
+    psToString (PGlob g) = globToString g

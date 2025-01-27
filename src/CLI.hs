@@ -4,9 +4,11 @@
 module CLI where
 
 import Data.Text (Text)
-import qualified Data.Text as T (lines, splitOn)
+import qualified Data.Text as T (intercalate, lines, splitOn)
 import qualified Data.Text.IO as T
 import Parse (parsePattern)
+import Pattern (patternToString)
+import Search (searchLit)
 import System.Environment (getArgs)
 import Trie (buildLiteralTrie, buildPatternTrie, dump')
 
@@ -22,6 +24,12 @@ run = do
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
   putStrLn $ dump' patternTrie
+
+  let results =
+        [ (patternToString p, T.intercalate "." q)
+          | (p, q) <- searchLit patternTrie queryTrie
+        ]
+  mapM_ print results
   where
     liftEither :: (Show e) => Either e a -> IO a
     liftEither = either (fail . show) return

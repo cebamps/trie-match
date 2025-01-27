@@ -8,8 +8,9 @@ import Pattern (Pattern, PatternSegment (..), globMatch)
 import Trie (Trie (..), children, justChild)
 import Prelude hiding (lookup)
 
-search :: Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
-search = go ([], [])
+-- match a pattern trie against a trie of literals
+searchLit :: Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
+searchLit = go ([], [])
 
 go :: ([PatternSegment], [Text]) -> Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
 go (ppath, npath) patterns needles = do
