@@ -23,10 +23,12 @@ setVal = mapVal . const . Just
 mapChld :: (Map c (Trie c a) -> Map c (Trie c a)) -> Trie c a -> Trie c a
 mapChld f (Trie x m) = Trie x (f m)
 
+-- transform the subtrie at the given key, starting from an empty one if missing
+mapAt :: (Ord c) => c -> (Trie c a -> Trie c a) -> Trie c a -> Trie c a
+mapAt c f = mapChld $ Map.alter (Just . f . fromMaybe empty) c
+
 insert :: (Ord c) => [c] -> a -> Trie c a -> Trie c a
-insert cs x = foldr go (setVal x) cs
-  where
-    go c ins = mapChld $ Map.alter (Just . ins . fromMaybe empty) c
+insert cs x = foldr mapAt (setVal x) cs
 
 empty :: Trie c a
 empty = Trie Nothing Map.empty
