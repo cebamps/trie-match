@@ -36,10 +36,10 @@ insert cs x = foldr go (setVal x) cs
 empty :: Trie c a
 empty = Trie Nothing Map.empty
 
-fromList :: Ord c => [([c],a)] -> Trie c a
-fromList = foldl' (\t (k,v) -> insert k v t) empty
+fromList :: (Ord c) => [([c], a)] -> Trie c a
+fromList = foldl' (\t (k, v) -> insert k v t) empty
 
-fromList' :: Ord c => [[c]] -> Trie c ()
+fromList' :: (Ord c) => [[c]] -> Trie c ()
 fromList' = fromList . fmap (,())
 
 -- prune the trie to keep just one child
@@ -77,7 +77,8 @@ dump showC showA t = "<root>:" <> cata showLvl t 0
   where
     showLvl :: TrieF c a (Int -> String) -> Int -> String
     showLvl (TrieF x m) i =
-      intercalate "\n"
+      intercalate
+        "\n"
         ( maybe "" showA x
             : (uncurry (row i) <$> Map.toList m)
         )

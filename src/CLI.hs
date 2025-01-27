@@ -1,19 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module CLI where
 
+import Data.Text (Text)
 import qualified Data.Text as T (lines, splitOn)
 import qualified Data.Text.IO as T
-import Trie (buildLiteralTrie, buildPatternTrie, dump')
-import Data.Text (Text)
-import System.Environment (getArgs)
 import Parse (parsePattern)
+import System.Environment (getArgs)
+import Trie (buildLiteralTrie, buildPatternTrie, dump')
 
 run :: IO ()
 run = do
   (arg1, arg2) <- getTwoArgs
-  
+
   queryTrie <- buildLiteralTrie . fmap (T.splitOn ".") . T.lines <$> readFrom arg1
   putStrLn $ dump' queryTrie
 
@@ -22,14 +22,14 @@ run = do
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
   putStrLn $ dump' patternTrie
-
   where
     liftEither :: (Show e) => Either e a -> IO a
     liftEither = either (fail . show) return
     getTwoArgs :: IO (String, String)
-    getTwoArgs = getArgs >>= \case
-      [x,y] -> return (x,y)
-      _ -> fail "Expected two arguments"
+    getTwoArgs =
+      getArgs >>= \case
+        [x, y] -> return (x, y)
+        _ -> fail "Expected two arguments"
 
 readFrom :: FilePath -> IO Text
 readFrom "-" = T.getContents
