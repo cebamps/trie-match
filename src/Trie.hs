@@ -1,8 +1,3 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeFamilies #-}
-
 module Trie where
 
 import Data.Functor.Foldable (Base, Corecursive (..), Recursive (..))
