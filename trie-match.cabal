@@ -4,7 +4,6 @@ version:            0.1.0.0
 license:            NONE
 author:             Cédric Bamps
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
 
 common warnings
     ghc-options: -Wall
