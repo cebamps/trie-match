@@ -51,3 +51,4 @@ test-suite trie-match-test
       , trie-match
       , tasty
       , tasty-hunit
+      , text
