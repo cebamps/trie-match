@@ -15,11 +15,21 @@ import qualified Data.Text as T
 
 type Pattern = [PatternSegment]
 
-data PatternSegment = PGlob Glob | PStar deriving (Eq, Ord, Show)
+data PatternSegment
+  = -- | matches one segment against a glob
+    PGlob Glob
+    -- | matches one or more segments
+  | PPlus
+  deriving (Eq, Ord, Show)
 
 type Glob = [GlobSegment]
 
-data GlobSegment = GLit Text | GStar deriving (Eq, Ord, Show)
+data GlobSegment
+  = -- | literal match
+    GLit Text
+  | -- | match zero or more characters
+    GStar
+  deriving (Eq, Ord, Show)
 
 globSegmentAsParser :: Glob -> Parser ()
 globSegmentAsParser = foldr prepend endOfInput
@@ -42,5 +52,5 @@ patternToString :: Pattern -> Text
 patternToString = T.intercalate "." . fmap psToString
   where
     psToString :: PatternSegment -> Text
-    psToString PStar = "*"
+    psToString PPlus = "*"
     psToString (PGlob g) = globToString g

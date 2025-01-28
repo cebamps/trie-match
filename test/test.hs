@@ -24,7 +24,7 @@ parseTests =
     [ testCase "Simple literals" $
         "foo.bar.bazz" `parsesTo` [pLit "foo", pLit "bar", pLit "bazz"],
       testCase "Single star" $
-        "*" `parsesTo` [PStar],
+        "*" `parsesTo` [PPlus],
       testCase "Literals with empty segment" $
         ".a." `parsesTo` [pEmpty, pLit "a", pEmpty],
       testCase "Empty pattern" $
@@ -33,7 +33,7 @@ parseTests =
       -- testCase "Illegal syntax" $
       --   parseFails "**"
       testCase "Complex pattern with globs and stars" $
-        "*.f*o.bar" `parsesTo` [PStar, PGlob [GLit "f", GStar, GLit "o"], PGlob [GLit "bar"]],
+        "*.f*o.bar" `parsesTo` [PPlus, PGlob [GLit "f", GStar, GLit "o"], PGlob [GLit "bar"]],
       testCase "Complex glob" $
         "f*o*" `parsesTo` [PGlob [GLit "f", GStar, GLit "o", GStar]]
     ]

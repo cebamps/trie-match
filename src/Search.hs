@@ -26,10 +26,10 @@ go (ppath, npath) patterns needles = do
         pMatch <- tValue patterns'
         pure (reverse ppath', reverse npath')
 
-  -- A match against PStar is allowed to not consume the pattern segment, so that it spans one or more needle segments. This is implemented by sythesizing an additional pattern trie with just the PStar branch.
+  -- A match against PPlus is allowed to not consume the pattern segment, so that it spans one or more needle segments. This is implemented by sythesizing an additional pattern trie with just the PPlus branch.
   let notMoving = do
-        guard $ pk == PStar
-        starTrie <- maybeToList $ justChild PStar patterns
+        guard $ pk == PPlus
+        starTrie <- maybeToList $ justChild PPlus patterns
         go (tail ppath', npath') starTrie needles'
 
   let moving =
@@ -37,5 +37,5 @@ go (ppath, npath) patterns needles = do
 
   maybeToList matched <|> moving <|> notMoving
   where
-    patMatch PStar _ = True
+    patMatch PPlus _ = True
     patMatch (PGlob g) t = globMatch g t

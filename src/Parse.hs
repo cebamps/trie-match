@@ -27,7 +27,7 @@ pattern :: Parser Pattern
 pattern = patternSegment `sepBy'` char '.'
 
 patternSegment :: Parser PatternSegment
-patternSegment = (PStar <$ loneStar) <|> (PGlob <$> glob)
+patternSegment = (PPlus <$ loneStar) <|> (PGlob <$> glob)
   where
     loneStar = char '*' <* lookAhead (void (char '.') <|> endOfInput)
 
