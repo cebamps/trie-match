@@ -7,20 +7,20 @@ import Parse (parsePattern)
 import Pattern (patternToString)
 import Search (searchLit)
 import System.Environment (getArgs)
-import Trie (buildLiteralTrie, buildPatternTrie, dump')
+import Trie (buildLiteralTrie, buildPatternTrie, dump)
 
 run :: IO ()
 run = do
   (arg1, arg2) <- getTwoArgs
 
   queryTrie <- buildLiteralTrie . fmap (T.splitOn ".") . T.lines <$> readFrom arg1
-  putStrLn $ dump' queryTrie
+  putStrLn $ dump queryTrie
 
   patternTrie <- do
     raw <- T.lines <$> readFrom arg2
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
-  putStrLn $ dump' patternTrie
+  putStrLn $ dump patternTrie
 
   let results =
         [ (patternToString p, T.intercalate "." q)
