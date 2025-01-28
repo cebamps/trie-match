@@ -73,28 +73,28 @@ searchLitTests =
           [("", [""]), (".", ["."])]
           ["x"],
       testCase "Trivial wildcard pattern trie" $
-        -- borrowed from Elm implementation, minus kleene star
         testSearchLit
-          ["*"]
-          [ ("x", ["*"]),
-            ("", ["*"]),
-            ("x.y.z", ["*"])
+          ["a.*.c", "a.**.c", "a.**.c.*", "a.**.c.**"]
+          [ ("a.c", ["a.**.c", "a.**.c.**"]),
+            ("a.b.c", ["a.*.c", "a.**.c", "a.**.c.**"]),
+            ("a.c.d", ["a.**.c.*", "a.**.c.**"]),
+            ("a.c.c", ["a.*.c", "a.**.c", "a.**.c.*", "a.**.c.**"])
           ]
-          [],
+          ["a.b", "a", "b.c"],
       testCase "tree with inner wildcards" $
-        -- difference with Elm implementation: the pattern a.*c is implemented as (a.*c, a.*.*c) here
+        -- difference with Elm implementation: the pattern a.*c is implemented as a.**.*c here
         testSearchLit
-          ["a", "a.*c", "a.*.*c", "a.c", "a.e*", "a.e*.*", "*g.i", "*.*g.i"]
-          [ ("a.c", ["a.*c", "a.c"]),
-            ("a.bc", ["a.*c"]),
-            ("a.b.c", ["a.*.*c"]),
-            ("a.b.bc", ["a.*.*c"]),
-            ("a.b.b.c", ["a.*.*c"]),
-            ("a.b.b.bc", ["a.*.*c"]),
-            ("a.e", ["a.e*"]),
-            ("a.e.e", ["a.e*.*"]),
-            ("g.i", ["*g.i"]),
-            ("k.g.i", ["*.*g.i"])
+          ["a", "a.**.*c", "a.c", "a.e*.**", "**.*g.i"]
+          [ ("a.c", ["a.**.*c", "a.c"]),
+            ("a.bc", ["a.**.*c"]),
+            ("a.b.c", ["a.**.*c"]),
+            ("a.b.bc", ["a.**.*c"]),
+            ("a.b.b.c", ["a.**.*c"]),
+            ("a.b.b.bc", ["a.**.*c"]),
+            ("a.e", ["a.e*.**"]),
+            ("a.e.e", ["a.e*.**"]),
+            ("g.i", ["**.*g.i"]),
+            ("k.g.i", ["**.*g.i"])
           ]
           []
     ]

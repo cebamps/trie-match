@@ -20,6 +20,8 @@ data PatternSegment
     PGlob Glob
     -- | matches one or more segments
   | PPlus
+    -- | matches zero or more segments
+  | PStar
   deriving (Eq, Ord, Show)
 
 type Glob = [GlobSegment]
@@ -53,4 +55,5 @@ patternToString = T.intercalate "." . fmap psToString
   where
     psToString :: PatternSegment -> Text
     psToString PPlus = "*"
+    psToString PStar = "**"
     psToString (PGlob g) = globToString g

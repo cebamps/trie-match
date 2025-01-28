@@ -26,9 +26,13 @@ go (ppath, npath) patterns needles = do
         pMatch <- tValue patterns'
         pure (reverse ppath', reverse npath')
 
-  -- State transitions walking dawn the needle trie or both. When we stay
-  -- put, we make sure to prune the trie to just the branch we've picked.
+  -- State transitions walking dawn the pattern trie, the needle trie, or both.
+  -- When we stay put on either end, we make sure to prune the trie to just the
+  -- branch we've picked.
   let popBoth = matched <|> go (ppath', npath') patterns' needles'
+      popPattern = do
+        needles'' <- maybeToList $ justChild nk needles
+        go (ppath', npath) patterns' needles''
       popNeedle = do
         patterns'' <- maybeToList $ justChild pk patterns
         go (ppath, npath') patterns'' needles'
@@ -38,4 +42,7 @@ go (ppath, npath) patterns needles = do
     -- so that it spans one or more needle segments. This is implemented by
     -- sythesizing an additional pattern trie with just the PPlus branch.
     PPlus -> popBoth <|> popNeedle
+    -- Similarly, a match against PStar is allowed to be skipped. The
+    -- difference is when we emit the segment to the returned path.
+    PStar -> popBoth <|> popPattern
     PGlob g -> guard (globMatch g nk) >> popBoth
