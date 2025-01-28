@@ -28,6 +28,7 @@ go (ppath, npath) patterns needles = do
 
   -- A match against PStar is allowed to not consume the pattern segment, so that it spans one or more needle segments. This is implemented by sythesizing an additional pattern trie with just the PStar branch.
   let notMoving = do
+        guard $ pk == PStar
         starTrie <- maybeToList $ justChild PStar patterns
         go (tail ppath', npath') starTrie needles'
 
