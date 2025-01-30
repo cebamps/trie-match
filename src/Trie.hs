@@ -39,12 +39,6 @@ fromList = foldl' (\t (k, v) -> insert k v t) empty
 fromList' :: (Ord c) => [[c]] -> Trie c ()
 fromList' = fromList . fmap (,())
 
--- | prune the trie to keep just one child
-justChild :: (Ord c) => c -> Trie c a -> Maybe (Trie c a)
-justChild k (Trie x m) = case Map.lookup k m of
-  Nothing -> Nothing
-  Just t' -> Just $ Trie x (Map.singleton k t')
-
 children :: Trie c a -> [(c, Trie c a)]
 children = Map.toList . tChildren
 

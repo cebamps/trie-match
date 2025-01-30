@@ -1,48 +1,58 @@
-module Search where
+module Search (searchLit) where
 
-import Control.Applicative ((<|>))
-import Control.Monad (guard)
+import Control.Applicative (empty, (<|>))
+import Control.Monad (mfilter)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Pattern (Pattern, PatternSegment (..), globMatch)
-import Trie (Trie (..), children, justChild)
-import Prelude hiding (lookup)
+import Trie (Trie (..), children)
 
--- match a pattern trie against a trie of literals
+-- | match a pattern trie against a trie of literals
 searchLit :: Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
-searchLit = go ([], [])
+-- TODO: deduplicate states _during_ the search
+searchLit patterns needles = nubOrd $ recur ([], patterns) ([], needles)
 
-go :: ([PatternSegment], [Text]) -> Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
-go (ppath, npath) patterns needles = do
-  -- pick all branch pairs
-  (nk, needles') <- children needles
-  (pk, patterns') <- children patterns
-  let ppath' = pk : ppath
-      npath' = nk : npath
+type TState c a = ([c], Trie c a)
 
-  let matched = maybeToList $ do
-        -- uses MonadFail instance; TODO return value too
-        nMatch <- tValue needles'
-        pMatch <- tValue patterns'
-        pure (reverse ppath', reverse npath')
+recur :: TState PatternSegment a -> TState Text b -> [(Pattern, [Text])]
+recur p@(ppath, patterns) n@(npath, needles) = matched <|> next
+  where
+    next = transitions >>= uncurry recur
+    transitions = tAdvancing (p, n) <|> tStaying (p, n)
 
-  -- State transitions walking dawn the pattern trie, the needle trie, or both.
-  -- When we stay put on either end, we make sure to prune the trie to just the
-  -- branch we've picked.
-  let popBoth = matched <|> go (ppath', npath') patterns' needles'
-      popPattern = do
-        needles'' <- maybeToList $ justChild nk needles
-        go (ppath', npath) patterns' needles''
-      popNeedle = do
-        patterns'' <- maybeToList $ justChild pk patterns
-        go (ppath, npath') patterns'' needles'
+    matched = maybeToList $ do
+      -- uses MonadFail instance; TODO return value too
+      _ <- tValue needles
+      _ <- tValue patterns
+      pure (reverse ppath, reverse npath)
 
+-- | transitions that advance the pattern state
+tAdvancing :: (TState PatternSegment a, TState Text b) -> [(TState PatternSegment a, TState Text b)]
+tAdvancing (p, n) = do
+  (pk, p') <- advance p
   case pk of
-    -- A match against PPlus is allowed to not consume the pattern segment,
-    -- so that it spans one or more needle segments. This is implemented by
-    -- sythesizing an additional pattern trie with just the PPlus branch.
-    PPlus -> popBoth <|> popNeedle
-    -- Similarly, a match against PStar is allowed to be skipped. The
-    -- difference is when we emit the segment to the returned path.
-    PStar -> popBoth <|> popPattern
-    PGlob g -> guard (globMatch g nk) >> popBoth
+    PStar -> pure (p', n)
+    PPlus -> (p',) . snd <$> advance n
+    -- could optimize literal-to-literal matching here instead of scanning all
+    -- children
+    _ -> (p',) . snd <$> mfilter (patMatch pk . fst) (advance n)
+
+-- | transitions that keep the pattern state still
+tStaying :: (TState PatternSegment a, TState Text b) -> [(TState PatternSegment a, TState Text b)]
+tStaying (p, n) = case p of
+  (ph : _, _) | ph == PStar || ph == PPlus -> do
+    (_, n') <- advance n
+    pure (p, n')
+  _ -> empty
+
+-- | advance the state to each child
+advance :: TState c a -> [(c, TState c a)]
+advance (path, t) = do
+  (k, t') <- children t
+  pure (k, (k : path, t'))
+
+patMatch :: PatternSegment -> Text -> Bool
+patMatch PStar _ = True
+patMatch PPlus _ = True
+patMatch (PGlob g) x = globMatch g x

@@ -1,4 +1,4 @@
-module CLI where
+module CLI(run) where
 
 import Data.Text (Text)
 import qualified Data.Text as T (intercalate, lines, splitOn)
