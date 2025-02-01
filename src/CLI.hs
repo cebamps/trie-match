@@ -1,32 +1,27 @@
-module CLI(run) where
+module CLI (run) where
 
 import Data.Text (Text)
-import qualified Data.Text as T (intercalate, lines, splitOn)
-import qualified Data.Text.IO as T
+import Data.Text qualified as T (intercalate, lines, splitOn)
+import Data.Text.IO qualified as T
 import Parse (parsePattern)
 import Pattern (patternToString)
 import Search (searchLit)
 import System.Environment (getArgs)
-import Trie (buildLiteralTrie, buildPatternTrie, dump)
+import Trie (buildLiteralTrie, buildPatternTrie)
 
 run :: IO ()
 run = do
   (arg1, arg2) <- getTwoArgs
 
   queryTrie <- buildLiteralTrie . fmap (T.splitOn ".") . T.lines <$> readFrom arg1
-  putStrLn $ dump queryTrie
 
   patternTrie <- do
     raw <- T.lines <$> readFrom arg2
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
-  putStrLn $ dump patternTrie
 
-  let results =
-        [ (patternToString p, T.intercalate "." q)
-          | (p, q) <- searchLit patternTrie queryTrie
-        ]
-  mapM_ print results
+  let results = searchLit patternTrie queryTrie
+  mapM_ (T.putStrLn . resultLine) results
   where
     liftEither :: (Show e) => Either e a -> IO a
     liftEither = either (fail . show) return
@@ -35,6 +30,7 @@ run = do
       getArgs >>= \case
         [x, y] -> return (x, y)
         _ -> fail "Expected two arguments"
+    resultLine (p, q) = T.intercalate "." q <> "\t" <> patternToString p
 
 readFrom :: FilePath -> IO Text
 readFrom "-" = T.getContents

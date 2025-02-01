@@ -11,17 +11,17 @@ import Data.Attoparsec.Text
   )
 import Data.Either (isRight)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 
 type Pattern = [PatternSegment]
 
 data PatternSegment
   = -- | matches one segment against a glob
     PGlob Glob
-    -- | matches one or more segments
-  | PPlus
-    -- | matches zero or more segments
-  | PStar
+  | -- | matches one or more segments
+    PPlus
+  | -- | matches zero or more segments
+    PStar
   deriving (Eq, Ord, Show)
 
 type Glob = [GlobSegment]
