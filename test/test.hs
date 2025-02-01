@@ -121,8 +121,8 @@ testSearchLit patterns matches failures = do
 
   -- for simplicity, reformat the outputs as text too
   let actual =
-        [ (T.intercalate "." qry, patternToString pat)
-          | (pat, qry) <- searchLit pTree qTree
+        [ (T.intercalate "." (spath qs), patternToString (spath ps))
+          | SearchResult ps qs <- searchLit pTree qTree
         ]
   let expected =
         [ (qry, pat)

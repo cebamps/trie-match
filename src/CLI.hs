@@ -5,7 +5,7 @@ import Data.Text qualified as T (intercalate, lines, splitOn)
 import Data.Text.IO qualified as T
 import Parse (parsePattern)
 import Pattern (patternToString)
-import Search (searchLit)
+import Search (SearchLoc (..), SearchResult (..), searchLit)
 import System.Environment (getArgs)
 import Trie (buildLiteralTrie, buildPatternTrie)
 
@@ -30,7 +30,7 @@ run = do
       getArgs >>= \case
         [x, y] -> return (x, y)
         _ -> fail "Expected two arguments"
-    resultLine (p, q) = T.intercalate "." q <> "\t" <> patternToString p
+    resultLine (SearchResult {patternLoc = p, queryLoc = q}) = T.intercalate "." (spath q) <> "\t" <> patternToString (spath p)
 
 readFrom :: FilePath -> IO Text
 readFrom "-" = T.getContents

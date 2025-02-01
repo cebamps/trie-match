@@ -1,31 +1,51 @@
-module Search (searchLit) where
+module Search (searchLit, SearchResult (..), SearchLoc (..)) where
 
 import Control.Applicative (empty, (<|>))
 import Control.Monad (mfilter)
-import Data.Containers.ListUtils (nubOrd)
+import Data.Containers.ListUtils (nubOrdOn)
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
-import Pattern (Pattern, PatternSegment (..), globMatch)
+import Pattern (PatternSegment (..), globMatch)
 import Trie (Trie (..), children)
 
+data SearchLoc c a = SearchLoc
+  { spath :: [c],
+    svalue :: a
+  }
+  deriving (Show, Eq, Ord)
+
+data SearchResult p q a b = SearchResult
+  { patternLoc :: SearchLoc p a,
+    queryLoc :: SearchLoc q b
+  }
+  deriving (Show, Eq, Ord)
+
 -- | match a pattern trie against a trie of literals
-searchLit :: Trie PatternSegment a -> Trie Text b -> [(Pattern, [Text])]
+searchLit :: Trie PatternSegment a -> Trie Text b -> [SearchResult PatternSegment Text a b]
 -- TODO: deduplicate states _during_ the search
-searchLit patterns needles = nubOrd $ recur ([], patterns) ([], needles)
+searchLit patterns needles = dedup $ recur ([], patterns) ([], needles)
+  where
+    -- assumption: all pairs of paths represent the same result (that way we
+    -- don't need @(Ord a, Ord b)@)
+    dedup = nubOrdOn justPaths
+    justPaths = (,) <$> (spath . patternLoc) <*> (spath . queryLoc)
 
 type TState c a = ([c], Trie c a)
 
-recur :: TState PatternSegment a -> TState Text b -> [(Pattern, [Text])]
+recur :: TState PatternSegment a -> TState Text b -> [SearchResult PatternSegment Text a b]
 recur p@(ppath, patterns) n@(npath, needles) = matched <|> next
   where
     next = transitions >>= uncurry recur
     transitions = tAdvancing (p, n) <|> tStaying (p, n)
 
     matched = maybeToList $ do
-      -- uses MonadFail instance; TODO return value too
-      _ <- tValue needles
-      _ <- tValue patterns
-      pure (reverse ppath, reverse npath)
+      -- uses MonadFail instance
+      x <- tValue patterns
+      y <- tValue needles
+      pure $
+        SearchResult
+          (SearchLoc (reverse ppath) x)
+          (SearchLoc (reverse npath) y)
 
 -- | transitions that advance the pattern state
 tAdvancing :: (TState PatternSegment a, TState Text b) -> [(TState PatternSegment a, TState Text b)]
