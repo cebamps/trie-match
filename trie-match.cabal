@@ -18,9 +18,9 @@ library
       , Trie
     build-depends:
       , base ^>=4.18.2.1
-      , attoparsec
       , bytestring
       , containers
+      , megaparsec
       , recursion-schemes
       , text
     hs-source-dirs:   src

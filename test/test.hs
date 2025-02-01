@@ -117,7 +117,7 @@ testSearchLit patterns matches failures = do
 
   pTree <- case traverse parsePattern patterns of
     Right p -> pure $ fromList' p
-    Left _ -> assertFailure "Pattern tree failed to parse"
+    Left e -> assertFailure $ "Pattern tree failed to parse:\n" <> e
 
   -- for simplicity, reformat the outputs as text too
   let actual =

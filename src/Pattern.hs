@@ -1,17 +1,14 @@
 module Pattern where
 
 import Control.Monad (void)
-import Data.Attoparsec.Text
-  ( Parser,
-    anyChar,
-    endOfInput,
-    manyTill,
-    parseOnly,
-    string,
-  )
 import Data.Either (isRight)
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Void (Void)
+import Text.Megaparsec (Parsec, anySingle, eof, manyTill, parse)
+import Text.Megaparsec.Char (string)
+
+type Parser = Parsec Void Text
 
 type Pattern = [PatternSegment]
 
@@ -34,14 +31,14 @@ data GlobSegment
   deriving (Eq, Ord, Show)
 
 globSegmentAsParser :: Glob -> Parser ()
-globSegmentAsParser = foldr prepend endOfInput
+globSegmentAsParser = foldr prepend eof
   where
     prepend :: GlobSegment -> Parser () -> Parser ()
     prepend (GLit x) p = string x *> p
-    prepend GStar p = void $ manyTill anyChar p
+    prepend GStar p = void $ manyTill anySingle p
 
 globMatch :: Glob -> Text -> Bool
-globMatch g = isRight . parseOnly (globSegmentAsParser g)
+globMatch g = isRight . parse (globSegmentAsParser g) ""
 
 globToString :: Glob -> Text
 globToString = T.concat . fmap gsToString
