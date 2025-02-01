@@ -6,7 +6,7 @@ import Data.Functor (void)
 import Data.Text (Text)
 import Data.Void (Void)
 import Pattern (GlobSegment (..), Pattern, PatternSegment (..))
-import Text.Megaparsec (Parsec, eof, errorBundlePretty, lookAhead, many, parse, sepBy, takeWhile1P)
+import Text.Megaparsec (Parsec, eof, errorBundlePretty, lookAhead, many, parse, sepBy, takeWhile1P, try)
 import Text.Megaparsec.Char (char)
 
 type Parser = Parsec Void Text
@@ -26,7 +26,7 @@ pattern :: Parser Pattern
 pattern = patternSegment `sepBy` char '.'
 
 patternSegment :: Parser PatternSegment
-patternSegment = starOrPlus <|> (PGlob <$> glob)
+patternSegment = try starOrPlus <|> (PGlob <$> glob)
   where
     starOrPlus =
       char '*'
