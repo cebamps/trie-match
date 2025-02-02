@@ -6,6 +6,9 @@
     systems = ["aarch64-darwin" "x86_64-linux"];
     forEachSystem = f: lib.genAttrs systems (system: f {pkgs = nixpkgs.legacyPackages.${system};});
   in {
+    packages = forEachSystem ({pkgs}: {
+      default = pkgs.haskellPackages.callPackage ./default.nix {};
+    });
     devShells = forEachSystem ({pkgs}: let
       haskellPackages = pkgs.haskellPackages;
     in {
