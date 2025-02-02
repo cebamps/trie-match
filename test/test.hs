@@ -15,34 +15,61 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parseTests, searchLitTests]
+tests = testGroup "Tests" [patternParseTests, queryParseTests, searchLitTests]
 
-parseTests :: TestTree
-parseTests =
+patternParseTests :: TestTree
+patternParseTests =
   testGroup
     "Parse pattern"
     [ testCase "Simple literals" $
-        "foo.bar.bazz" `parsesTo` [pLit "foo", pLit "bar", pLit "bazz"],
+        "foo.bar.bazz"
+          `parsesTo` ([pLit "foo", pLit "bar", pLit "bazz"], ""),
       testCase "Single star" $
-        "*" `parsesTo` [PPlus],
+        "*"
+          `parsesTo` ([PPlus], ""),
       testCase "Literals with empty segment" $
-        ".a." `parsesTo` [pEmpty, pLit "a", pEmpty],
+        ".a."
+          `parsesTo` ([pEmpty, pLit "a", pEmpty], ""),
       testCase "Empty pattern" $
-        "" `parsesTo` [pEmpty],
-      ---- note: this isn't illegal yet
-      -- testCase "Illegal syntax" $
-      --   parseFails "**"
+        ""
+          `parsesTo` ([pEmpty], ""),
       testCase "Complex pattern with globs and stars" $
-        "*.f*o.bar" `parsesTo` [PPlus, PGlob [GLit "f", GStar, GLit "o"], PGlob [GLit "bar"]],
+        "*.f*o.bar"
+          `parsesTo` ([PPlus, PGlob [GLit "f", GStar, GLit "o"], PGlob [GLit "bar"]], ""),
       testCase "Complex glob" $
-        "f*o*" `parsesTo` [PGlob [GLit "f", GStar, GLit "o", GStar]]
+        "f*o*"
+          `parsesTo` ([PGlob [GLit "f", GStar, GLit "o", GStar]], ""),
+      testCase "Annotation" $
+        "foo*bar.baz with a space\tthis is the annotation.\tand this too"
+          `parsesTo` ([PGlob [GLit "foo", GStar, GLit "bar"], pLit "baz with a space"], "this is the annotation.\tand this too")
     ]
   where
     pEmpty = PGlob []
     pLit x = PGlob [GLit x]
-    x `parsesTo` g = parsePattern x @?= Right g
-    parseFails :: (HasCallStack) => Text -> Assertion
-    parseFails x = assertLeft $ parsePattern x
+    x `parsesTo` g = parsePatternLine x @?= Right g
+
+queryParseTests :: TestTree
+queryParseTests =
+  testGroup
+    "Parse query"
+    [ testCase "Simple literals" $
+        "foo.bar.bazz"
+          `parsesTo` (["foo", "bar", "bazz"], ""),
+      testCase "Literals with empty segment" $
+        ".a."
+          `parsesTo` (["", "a", ""], ""),
+      testCase "Empty pattern" $
+        ""
+          `parsesTo` ([""], ""),
+      testCase "Glob-looking, but with no special meaning" $
+        "*.**"
+          `parsesTo` (["*", "**"], ""),
+      testCase "Annotation" $
+        "foo*bar.baz with a space\tthis is the annotation.\tand this too"
+          `parsesTo` (["foo*bar", "baz with a space"], "this is the annotation.\tand this too")
+    ]
+  where
+    x `parsesTo` g = parseLitPatternLine x @?= Right g
 
 searchLitTests :: TestTree
 searchLitTests =
@@ -131,10 +158,8 @@ testSearchLit patterns matches failures = do
         ]
 
   assertUnorderedEq expected actual
-
-assertLeft :: (HasCallStack, Show b) => Either a b -> Assertion
-assertLeft (Left _) = pure ()
-assertLeft (Right actual) = assertFailure $ "Parse did not fail. Expected Left _ but succeeded with: " <> show actual
+  where
+    parsePattern = fmap fst . parsePatternLine
 
 assertUnorderedEq :: (HasCallStack, Ord a, Show a) => [a] -> [a] -> Assertion
 assertUnorderedEq (sort -> expected) (sort -> actual)

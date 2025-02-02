@@ -42,14 +42,6 @@ fromList' = fromList . fmap (,())
 children :: Trie c a -> [(c, Trie c a)]
 children = Map.toList . tChildren
 
--- * Specializations
-
-buildPatternTrie :: [Pattern] -> Trie PatternSegment ()
-buildPatternTrie = fromList'
-
-buildLiteralTrie :: [[Text]] -> Trie Text ()
-buildLiteralTrie = fromList'
-
 -- * Recursion schemes
 
 data TrieF c a r = TrieF (Maybe a) (Map c r) deriving (Functor, Show)
