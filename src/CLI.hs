@@ -6,17 +6,17 @@ import Data.Text.IO qualified as T
 import Parse (parsePattern)
 import Pattern (patternToString)
 import Search (SearchLoc (..), SearchResult (..), searchLit)
-import System.Environment (getArgs)
 import Trie (buildLiteralTrie, buildPatternTrie)
+import Options (Options (Options, patternPath, queryPath), parseOptions, PathOrStdin (POSStdin, POSPath))
 
 run :: IO ()
 run = do
-  (arg1, arg2) <- getTwoArgs
+  Options {patternPath, queryPath} <- parseOptions
 
-  queryTrie <- buildLiteralTrie . fmap (T.splitOn ".") . T.lines <$> readFrom arg1
+  queryTrie <- buildLiteralTrie . fmap (T.splitOn ".") . T.lines <$> readFrom queryPath
 
   patternTrie <- do
-    raw <- T.lines <$> readFrom arg2
+    raw <- T.lines <$> readFrom patternPath
     parsed <- liftEither $ traverse parsePattern raw
     return $ buildPatternTrie parsed
 
@@ -25,13 +25,8 @@ run = do
   where
     liftEither :: (Show e) => Either e a -> IO a
     liftEither = either (fail . show) return
-    getTwoArgs :: IO (String, String)
-    getTwoArgs =
-      getArgs >>= \case
-        [x, y] -> return (x, y)
-        _ -> fail "Expected two arguments"
     resultLine (SearchResult {patternLoc = p, queryLoc = q}) = T.intercalate "." (spath q) <> "\t" <> patternToString (spath p)
 
-readFrom :: FilePath -> IO Text
-readFrom "-" = T.getContents
-readFrom p = T.readFile p
+readFrom :: PathOrStdin -> IO Text
+readFrom POSStdin = T.getContents
+readFrom (POSPath p) = T.readFile p
