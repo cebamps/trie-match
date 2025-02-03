@@ -1,3 +1,6 @@
+{-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Options where
 
 import Options.Applicative
@@ -6,7 +9,9 @@ data PathOrStdin = POSPath FilePath | POSStdin deriving (Show)
 
 data Options = Options
   { patternPath :: PathOrStdin,
-    queryPath :: PathOrStdin
+    queryPath :: PathOrStdin,
+    patternsArePrefixes :: Bool,
+    multiSegmentGlobs :: Bool
   }
   deriving (Show)
 
@@ -19,22 +24,37 @@ parseOptions =
       )
 
 options :: Parser Options
-options =
-  Options
-    <$> option
+options = do
+  patternPath <-
+    option
       pathOrStdin
       ( long "pattern"
           <> short 'p'
           <> metavar "FILENAME"
           <> help "pattern file"
       )
-    <*> option
+  queryPath <-
+    option
       pathOrStdin
       ( long "query"
           <> short 'q'
           <> metavar "FILENAME"
           <> help "query file"
       )
+  patternsArePrefixes <-
+    switch
+      ( long "prefix"
+          <> short 'x'
+          <> help "interpret patterns as prefixes"
+      )
+  multiSegmentGlobs <-
+    switch
+      ( long "wide-globs"
+          <> short 'w'
+          <> help "globs at the boundaries of segment patterns may consume neighbouring segments"
+      )
+
+  pure $ Options {..}
 
 pathOrStdin :: ReadM PathOrStdin
 pathOrStdin = maybeReader $ \case

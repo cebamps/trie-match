@@ -1,44 +1,84 @@
 module CLI (run) where
 
+import Data.Bifunctor (first)
 import Data.List (dropWhileEnd)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T (intercalate, lines, null)
 import Data.Text.IO qualified as T
-import Options (Options (Options, patternPath, queryPath), PathOrStdin (POSPath, POSStdin), parseOptions)
+import Options (Options (..), PathOrStdin (POSPath, POSStdin), parseOptions)
 import Parse (parseLitPatternLine, parsePatternLine)
-import Pattern (patternToString)
+import Pattern (GlobSegment (..), Pattern, PatternSegment (..), patternToString)
 import Search (SearchLoc (..), SearchResult (..), searchLit)
-import Trie (Trie)
 import Trie qualified (fromList)
 
 run :: IO ()
 run = do
-  Options {patternPath, queryPath} <- parseOptions
+  opt@Options {patternPath, queryPath} <- parseOptions
 
-  queryTrie <- readAndParseTrie parseLitPatternLine queryPath
-  patternTrie <- readAndParseTrie parsePatternLine patternPath
+  queryTrie <- Trie.fromList . pathToLeaves <$> readAndParse parseLitPatternLine queryPath
+  -- TODO: Pattern mods can collapse paths that can be different in the first
+  -- place (e.g., @a*.b@ and @a*.**.b@ under 'multiSegmentGlobs'), and lose
+  -- annotations in the process. This could be addressed.
+  --
+  -- TODO: unit tests for this
+  patternTrie <- Trie.fromList . (fmap . first $ patternMods opt) . pathToLeaves <$> readAndParse parsePatternLine patternPath
 
   let results = searchLit patternTrie queryTrie
   mapM_ (T.putStrLn . resultLine) results
   where
+    -- stores the original key path into the trie value along with the value
+    -- read from the file
+    pathToLeaves xs = [(path, (path, ann)) | (path, ann) <- xs]
     resultLine (SearchResult {patternLoc = p, queryLoc = q}) =
-     let (ppath, pvalue) = svalue p
-         (qpath, qvalue) = svalue q
-      in (T.intercalate "\t" . trim)
-           [ T.intercalate "." qpath,
-             patternToString ppath,
-             qvalue,
-             pvalue
-           ]
+      let (ppath, pvalue) = svalue p
+          (qpath, qvalue) = svalue q
+       in (T.intercalate "\t" . trim)
+            [ T.intercalate "." qpath,
+              patternToString ppath,
+              qvalue,
+              pvalue
+            ]
     trim = dropWhileEnd T.null
 
--- stores the original key path into the trie value along with the value read from the file
-readAndParseTrie :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO (Trie c ([c], a))
-readAndParseTrie parse fpath = do
+patternMods :: Options -> Pattern -> Pattern
+patternMods (Options {patternsArePrefixes, multiSegmentGlobs}) =
+  compressStars
+    . when patternsArePrefixes asPrefix
+    . when multiSegmentGlobs insertStars
+  where
+    when b m = if b then m else id
+
+compressStars :: Pattern -> Pattern
+compressStars (PStar : PPlus : xs) = PPlus : xs
+compressStars (PPlus : PStar : xs) = PPlus : xs
+compressStars (PStar : PStar : xs) = PStar : xs
+compressStars xs = xs
+
+-- | Adds a pattern star next to glob stars in a pattern, for instance @a.*b@
+-- becomes @a.**.*b@. This makes no attempt to limit the stars inserted in the
+-- pattern, so it should be followed by 'compressStars': for instance @a*.*b@
+-- will become @a*.**.**.*b@.
+insertStars :: Pattern -> Pattern
+insertStars = concatMap $ \case
+  x@(PGlob g)
+    | atStart && atEnd -> [PStar, x, PStar]
+    | atStart -> [PStar, x]
+    | atEnd -> [x, PStar]
+    where
+      atStart = listToMaybe g == Just GStar
+      atEnd = listToMaybe (reverse g) == Just GStar
+  x -> [x]
+
+asPrefix :: Pattern -> Pattern
+asPrefix xs = case listToMaybe (reverse xs) of
+  Just (PGlob _) -> xs ++ [PStar]
+  _ -> xs
+
+readAndParse :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO [([c], a)]
+readAndParse parse fpath = do
   raw <- T.lines <$> readFrom fpath
-  parsed <- liftEither $ traverse parse raw
-  let decorated = [(path, (path, ann)) | (path, ann) <- parsed]
-  return $ Trie.fromList decorated
+  liftEither $ traverse parse raw
   where
     readFrom :: PathOrStdin -> IO Text
     readFrom POSStdin = T.getContents
