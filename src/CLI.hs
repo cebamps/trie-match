@@ -22,19 +22,23 @@ run = do
   mapM_ (T.putStrLn . resultLine) results
   where
     resultLine (SearchResult {patternLoc = p, queryLoc = q}) =
-      (T.intercalate "\t" . trim)
-        [ T.intercalate "." (spath q),
-          patternToString (spath p),
-          svalue q,
-          svalue p
-        ]
+     let (ppath, pvalue) = svalue p
+         (qpath, qvalue) = svalue q
+      in (T.intercalate "\t" . trim)
+           [ T.intercalate "." qpath,
+             patternToString ppath,
+             qvalue,
+             pvalue
+           ]
     trim = dropWhileEnd T.null
 
-readAndParseTrie :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO (Trie c a)
-readAndParseTrie parse path = do
-  raw <- T.lines <$> readFrom path
+-- stores the original key path into the trie value along with the value read from the file
+readAndParseTrie :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO (Trie c ([c], a))
+readAndParseTrie parse fpath = do
+  raw <- T.lines <$> readFrom fpath
   parsed <- liftEither $ traverse parse raw
-  return $ Trie.fromList parsed
+  let decorated = [(path, (path, ann)) | (path, ann) <- parsed]
+  return $ Trie.fromList decorated
   where
     readFrom :: PathOrStdin -> IO Text
     readFrom POSStdin = T.getContents
