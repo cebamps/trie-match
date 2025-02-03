@@ -19,7 +19,14 @@ mapVal :: (Maybe a -> Maybe a) -> Trie c a -> Trie c a
 mapVal f (Trie x m) = Trie (f x) m
 
 setVal :: a -> Trie c a -> Trie c a
-setVal = mapVal . const . Just
+setVal = insVal (\_ x -> x)
+
+insVal :: (a -> a -> a) -> a -> Trie c a -> Trie c a
+insVal ins x =
+  mapVal $
+    Just . \case
+      Nothing -> x
+      Just x0 -> ins x0 x
 
 mapChld :: (Map c (Trie c a) -> Map c (Trie c a)) -> Trie c a -> Trie c a
 mapChld f (Trie x m) = Trie x (f m)
@@ -28,11 +35,17 @@ mapChld f (Trie x m) = Trie x (f m)
 mapAt :: (Ord c) => c -> (Trie c a -> Trie c a) -> Trie c a -> Trie c a
 mapAt c f = mapChld $ Map.alter (Just . f . fromMaybe empty) c
 
+insertWith :: (Ord c) => (a -> a -> a) -> [c] -> a -> Trie c a -> Trie c a
+insertWith ins cs x = foldr mapAt (insVal ins x) cs
+
 insert :: (Ord c) => [c] -> a -> Trie c a -> Trie c a
-insert cs x = foldr mapAt (setVal x) cs
+insert = insertWith (\_ x -> x)
+
+fromListWith :: (Ord c) => (a -> a -> a) -> [([c], a)] -> Trie c a
+fromListWith ins = foldl' (\t (k, v) -> insertWith ins k v t) empty
 
 fromList :: (Ord c) => [([c], a)] -> Trie c a
-fromList = foldl' (\t (k, v) -> insert k v t) empty
+fromList = fromListWith (\_ x -> x)
 
 fromList' :: (Ord c) => [[c]] -> Trie c ()
 fromList' = fromList . fmap (,())
