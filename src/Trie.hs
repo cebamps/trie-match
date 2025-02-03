@@ -5,8 +5,6 @@ import Data.List (foldl', intercalate)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import Pattern (Pattern, PatternSegment)
 
 data Trie c a = Trie
   { tValue :: Maybe a,
