@@ -1,7 +1,8 @@
 module CLI (run) where
 
+import Data.List (dropWhileEnd)
 import Data.Text (Text)
-import Data.Text qualified as T (intercalate, lines)
+import Data.Text qualified as T (intercalate, lines, null)
 import Data.Text.IO qualified as T
 import Options (Options (Options, patternPath, queryPath), PathOrStdin (POSPath, POSStdin), parseOptions)
 import Parse (parseLitPatternLine, parsePatternLine)
@@ -20,7 +21,14 @@ run = do
   let results = searchLit patternTrie queryTrie
   mapM_ (T.putStrLn . resultLine) results
   where
-    resultLine (SearchResult {patternLoc = p, queryLoc = q}) = T.intercalate "." (spath q) <> "\t" <> patternToString (spath p)
+    resultLine (SearchResult {patternLoc = p, queryLoc = q}) =
+      (T.intercalate "\t" . trim)
+        [ T.intercalate "." (spath q),
+          patternToString (spath p),
+          svalue q,
+          svalue p
+        ]
+    trim = dropWhileEnd T.null
 
 readAndParseTrie :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO (Trie c a)
 readAndParseTrie parse path = do
