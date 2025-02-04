@@ -2,6 +2,7 @@ module Pattern where
 
 import Control.Monad (void)
 import Data.Either (isRight)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void (Void)
@@ -54,3 +55,33 @@ patternToString = T.intercalate "." . fmap psToString
     psToString PPlus = "*"
     psToString PStar = "**"
     psToString (PGlob g) = globToString g
+
+-- * Pattern modifiers
+
+compressStars :: Pattern -> Pattern
+compressStars = foldr bubble []
+  where
+    bubble PStar (PPlus : t) = PPlus : t
+    bubble PPlus (PStar : t) = PPlus : t
+    bubble PStar (PStar : t) = PStar : t
+    bubble x xs = x : xs
+
+-- | Adds a pattern star next to glob stars in a pattern, for instance @a.*b@
+-- becomes @a.**.*b@. This makes no attempt to limit the stars inserted in the
+-- pattern, so it should be followed by 'compressStars': for instance @a*.*b@
+-- will become @a*.**.**.*b@.
+insertStars :: Pattern -> Pattern
+insertStars = concatMap $ \case
+  x@(PGlob g)
+    | atStart && atEnd -> [PStar, x, PStar]
+    | atStart -> [PStar, x]
+    | atEnd -> [x, PStar]
+    where
+      atStart = listToMaybe g == Just GStar
+      atEnd = listToMaybe (reverse g) == Just GStar
+  x -> [x]
+
+asPrefix :: Pattern -> Pattern
+asPrefix xs = case listToMaybe (reverse xs) of
+  Just (PGlob _) -> xs ++ [PStar]
+  _ -> xs

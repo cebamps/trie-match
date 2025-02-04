@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
-import CLI (asPrefix, compressStars, insertStars)
 import Data.List (sort)
 import Data.Text (Text)
 import Data.Text qualified as T

@@ -1,14 +1,13 @@
-module CLI (run, compressStars, insertStars, asPrefix) where
+module CLI (run) where
 
 import Data.Bifunctor (first)
 import Data.List (dropWhileEnd)
-import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T (intercalate, lines, null)
 import Data.Text.IO qualified as T
 import Options (Options (..), PathOrStdin (POSPath, POSStdin), parseOptions)
 import Parse (parseLitPatternLine, parsePatternLine)
-import Pattern (GlobSegment (..), Pattern, PatternSegment (..), patternToString)
+import Pattern (Pattern, asPrefix, compressStars, insertStars, patternToString)
 import Search (SearchLoc (..), SearchResult (..), searchLit)
 import Trie qualified (fromList)
 
@@ -48,34 +47,6 @@ patternMods (Options {patternsArePrefixes, multiSegmentGlobs}) =
     . when multiSegmentGlobs insertStars
   where
     when b m = if b then m else id
-
-compressStars :: Pattern -> Pattern
-compressStars = foldr bubble []
-  where
-    bubble PStar (PPlus : t) = PPlus : t
-    bubble PPlus (PStar : t) = PPlus : t
-    bubble PStar (PStar : t) = PStar : t
-    bubble x xs = x : xs
-
--- | Adds a pattern star next to glob stars in a pattern, for instance @a.*b@
--- becomes @a.**.*b@. This makes no attempt to limit the stars inserted in the
--- pattern, so it should be followed by 'compressStars': for instance @a*.*b@
--- will become @a*.**.**.*b@.
-insertStars :: Pattern -> Pattern
-insertStars = concatMap $ \case
-  x@(PGlob g)
-    | atStart && atEnd -> [PStar, x, PStar]
-    | atStart -> [PStar, x]
-    | atEnd -> [x, PStar]
-    where
-      atStart = listToMaybe g == Just GStar
-      atEnd = listToMaybe (reverse g) == Just GStar
-  x -> [x]
-
-asPrefix :: Pattern -> Pattern
-asPrefix xs = case listToMaybe (reverse xs) of
-  Just (PGlob _) -> xs ++ [PStar]
-  _ -> xs
 
 readAndParse :: (Ord c) => (Text -> Either String ([c], a)) -> PathOrStdin -> IO [([c], a)]
 readAndParse parse fpath = do
