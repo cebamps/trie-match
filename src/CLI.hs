@@ -1,4 +1,4 @@
-module CLI (run) where
+module CLI (run, compressStars, insertStars, asPrefix) where
 
 import Data.Bifunctor (first)
 import Data.List (dropWhileEnd)

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
+import CLI (asPrefix, compressStars, insertStars)
 import Data.List (sort)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -15,7 +16,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [patternParseTests, queryParseTests, searchLitTests]
+tests = testGroup "Tests" [patternParseTests, queryParseTests, searchLitTests, patternModTests]
 
 patternParseTests :: TestTree
 patternParseTests =
@@ -44,8 +45,6 @@ patternParseTests =
           `parsesTo` ([PGlob [GLit "foo", GStar, GLit "bar"], pLit "baz with a space"], "this is the annotation.\tand this too")
     ]
   where
-    pEmpty = PGlob []
-    pLit x = PGlob [GLit x]
     x `parsesTo` g = parsePatternLine x @?= Right g
 
 queryParseTests :: TestTree
@@ -159,7 +158,97 @@ testSearchLit patterns matches failures = do
 
   assertUnorderedEq expected actual
   where
-    parsePattern = fmap fst . parsePatternLine
+
+patternModTests :: TestTree
+patternModTests =
+  testGroup
+    "Pattern mods"
+    [ testGroup "compress stars" compressStarsTests,
+      testGroup "insert stars" insertStarTests,
+      testGroup "turn into prefix" asPrefixTests
+    ]
+
+compressStarsTests :: [TestTree]
+compressStarsTests =
+  [ testCase "*.* stays put" $
+      "a.*.*.b" `becomes` "a.*.*.b",
+    testCase "** folds into * on the left" $
+      "a.*.**.b" `becomes` "a.*.b",
+    testCase "** folds into * on the right" $
+      "a.**.*.b" `becomes` "a.*.b",
+    testCase "** folds into **" $
+      "a.**.**.b" `becomes` "a.**.b",
+    testCase "long runs are also compressed" $
+      "**.*.**.**.*.*" `becomes` "*.*.*",
+    testCase "long runs of ** are also compressed" $
+      "**.**.**.**" `becomes` "**",
+    testCase "separate runs are compresesed" $
+      "**.*..*.**" `becomes` "*..*"
+  ]
+  where
+    becomes = (@?=) . compressStars `onM` parseOrFailTest parsePattern
+
+asPrefixTests :: [TestTree]
+asPrefixTests =
+  [ testCase "** appended" $
+      "a.b" `becomes` "a.b.**",
+    testCase "no-op when ended by *" $
+      "a.b.*" `becomes` "a.b.*",
+    testCase "no-op when ended by *" $
+      "a.b.**" `becomes` "a.b.**"
+  ]
+  where
+    becomes = (@?=) . asPrefix `onM` parseOrFailTest parsePattern
+
+insertStarTests :: [TestTree]
+insertStarTests =
+  [ testCase "at beginning of pattern" $
+      "*a.b" `becomes` "**.*a.b",
+    testCase "at end of pattern" $
+      "a.b*" `becomes` "a.b*.**",
+    testCase "at both ends of pattern" $
+      "*a.b*" `becomes` "**.*a.b*.**",
+    testCase "at both ends of pattern, same glob" $
+      "*a*" `becomes` "**.*a*.**",
+    testCase "in middle of pattern" $
+      "a.*x*.b" `becomes` "a.**.*x*.**.b",
+    testCase "in multiple segments" $
+      "a*.b.*c" `becomes` "a*.**.b.**.*c",
+    -- this is not ideal, but it is documented and remediated with compressStars
+    testCase "adjacently in two segments" $
+      "a*.*b" `becomes` "a*.**.**.*b",
+    testCase "not touching non-glob segments" $
+      "*.**.*" `becomes` "*.**.*",
+    testCase "not interacting with non-glob segments" $
+      "a*.**.*.*b" `becomes` "a*.**.**.*.**.*b"
+  ]
+  where
+    becomes = (@?=) . insertStars `onM` parseOrFailTest parsePattern
+
+-- * Utility
+
+pEmpty :: PatternSegment
+pEmpty = PGlob []
+
+pLit :: Text -> PatternSegment
+pLit x = PGlob [GLit x]
+
+parsePattern :: Text -> Either String Pattern
+parsePattern = fmap fst . parsePatternLine
+
+parseOrFailTest :: (HasCallStack) => (a -> Either String b) -> a -> IO b
+parseOrFailTest parse s = case parse s of
+  Left err -> assertFailure $ "Parsing failed while running test: " <> err
+  Right x -> return x
+
+infixl 0 `onM`
+
+-- | 'Data.Function.on' lifted into Monad
+onM :: (Monad m) => (b -> b -> m c) -> (a -> m b) -> a -> a -> m c
+onM f g x y = do
+  x' <- g x
+  y' <- g y
+  f x' y'
 
 assertUnorderedEq :: (HasCallStack, Ord a, Show a) => [a] -> [a] -> Assertion
 assertUnorderedEq (sort -> expected) (sort -> actual)
