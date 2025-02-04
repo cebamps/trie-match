@@ -50,10 +50,12 @@ patternMods (Options {patternsArePrefixes, multiSegmentGlobs}) =
     when b m = if b then m else id
 
 compressStars :: Pattern -> Pattern
-compressStars (PStar : PPlus : xs) = PPlus : xs
-compressStars (PPlus : PStar : xs) = PPlus : xs
-compressStars (PStar : PStar : xs) = PStar : xs
-compressStars xs = xs
+compressStars = foldr bubble []
+  where
+    bubble PStar (PPlus : t) = PPlus : t
+    bubble PPlus (PStar : t) = PPlus : t
+    bubble PStar (PStar : t) = PStar : t
+    bubble x xs = x : xs
 
 -- | Adds a pattern star next to glob stars in a pattern, for instance @a.*b@
 -- becomes @a.**.*b@. This makes no attempt to limit the stars inserted in the
