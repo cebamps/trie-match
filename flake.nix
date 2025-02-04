@@ -1,5 +1,7 @@
 {
-  inputs.nixpkgs.url = "nixpkgs";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+  };
 
   outputs = {nixpkgs, ...}: let
     inherit (nixpkgs) lib;
@@ -18,7 +20,6 @@
         ];
         nativeBuildInputs = with haskellPackages; [
           cabal-install
-          fourmolu
           ghcid
           haskell-language-server
         ];
