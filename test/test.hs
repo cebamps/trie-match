@@ -135,14 +135,10 @@ testSearchLit ::
   [Text] ->
   Assertion
 testSearchLit patterns matches failures = do
-  let qTree = fromList' parsedQueries
-        where
-          queries = (fst <$> matches) <> failures
-          parsedQueries = T.splitOn "." <$> queries
-
-  pTree <- case traverse parsePattern patterns of
-    Right p -> pure $ fromList' p
-    Left e -> assertFailure $ "Pattern tree failed to parse:\n" <> e
+  qTree <-
+    let queries = (fst <$> matches) <> failures
+     in fromList' <$> traverse (parseOrFailTest parseLitPattern) queries
+  pTree <- fromList' <$> traverse (parseOrFailTest parsePattern) patterns
 
   -- for simplicity, reformat the outputs as text too
   let actual =
@@ -156,7 +152,6 @@ testSearchLit patterns matches failures = do
         ]
 
   assertUnorderedEq expected actual
-  where
 
 patternModTests :: TestTree
 patternModTests =
@@ -234,6 +229,9 @@ pLit x = PGlob [GLit x]
 
 parsePattern :: Text -> Either String Pattern
 parsePattern = fmap fst . parsePatternLine
+
+parseLitPattern :: Text -> Either String [Text]
+parseLitPattern = fmap fst . parseLitPatternLine
 
 parseOrFailTest :: (HasCallStack) => (a -> Either String b) -> a -> IO b
 parseOrFailTest parse s = case parse s of
