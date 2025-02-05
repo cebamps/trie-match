@@ -1,3 +1,5 @@
+-- See doc/matching.md for a visual representation of what goes on here.
+
 module Search (searchLit, SearchResult (..), SearchLoc (..)) where
 
 import Control.Applicative (empty, (<|>))

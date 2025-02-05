@@ -1,0 +1,4 @@
+glob {
+  initial => abc: "\"abc\"";
+  abc => final;
+};

@@ -1,0 +1,5 @@
+plus {
+  initial => *: "any";
+  * => *: "any";
+  * => final;
+};
