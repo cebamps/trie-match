@@ -1,5 +1,0 @@
-star {
-  initial => **;
-  ** => **: "any";
-  ** => final;
-};

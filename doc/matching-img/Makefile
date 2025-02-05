@@ -1,13 +1,6 @@
-SMCAT := npx state-machine-cat@12.0.21
+%.svg: %.dot defs.m4
+	m4 $< | dot -Tsvg -o $@
 
-%.svg: %.smcat
-	$(SMCAT) -d left-right $< -o $@
+all: $(patsubst %.dot, %.svg, $(wildcard *.dot))
 
-%.dot: %.smcat
-	$(SMCAT) -d left-right -T dot $< -o $@
-
-all: svg dot
-svg: $(patsubst %.smcat, %.svg, $(wildcard *.smcat))
-dot: $(patsubst %.smcat, %.dot, $(wildcard *.smcat))
-
-.PHONY: all svg dot
+.PHONY: all

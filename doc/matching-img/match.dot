@@ -1,120 +1,59 @@
-digraph "state transitions" {
-  fontname="Helvetica" fontsize=12 penwidth=2.0 splines=true ordering=out compound=true overlap=scale nodesep=0.3 ranksep=0.1 rankdir=LR
-  node [shape=plaintext style=filled fillcolor="#FFFFFF01" fontname=Helvetica fontsize=12 penwidth=2.0]
-  edge [fontname=Helvetica fontsize=10]
+include(defs.m4)
 
-  "initial" [shape=circle style=filled class="state initial" color="black" fillcolor="black" fixedsize=true height=0.15 label=""]
-  "initial" -> "]in" [label="    \l" class="transition"]
-  subgraph "cluster_match.parallel" {
-    class="state parallel" label= <
-    <table cellborder="0" border="0">
-      <tr><td>match.parallel</td></tr>
-    </table>
-    > style=rounded penwidth=2.0
-    "match.parallel" [shape=point style=invis margin=0 width=0 height=0 fixedsize=true]
-      subgraph "cluster_pattern" {
-        class="state regular" label= <
-        <table cellborder="0" border="0">
-          <tr><td>pattern</td></tr>
-        </table>
-        > style=dashed penwidth=1.0
-        "pattern" [shape=point style=invis margin=0 width=0 height=0 fixedsize=true]
-          "p.usr" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">usr</td></tr>
-            </table>
-          >]
-          "p.usr" -> "p.bin" [label="\"bin\"   \l" class="transition"]
-          "p.usr" -> "p.sbin" [label="\"sbin\"   \l" class="transition"]
-          "p.bin" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">bin</td></tr>
-            </table>
-          >]
-          "p.bin" -> "p.bash" [label="\"bash\"   \l" class="transition"]
-          "p.sbin" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">sbin</td></tr>
-            </table>
-          >]
-          "p.sbin" -> "p.cron" [label="\"cron\"   \l" class="transition"]
-          "p.bash" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7"><i>bash</i></td></tr>
-            </table>
-          > peripheries=1 style=rounded]
-          "p.cron" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7"><i>cron</i></td></tr>
-            </table>
-          > peripheries=1 style=rounded]
-          "p.*" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">*</td></tr>
-            </table>
-          >]
-          "p.*" -> "p.trie_match" [label="\"trie-match\"   \l" class="transition"]
-          "p.*" -> "p.*" [label="any   \l" class="transition"]
-          "p.trie_match" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7"><i>trie-match</i></td></tr>
-            </table>
-          > peripheries=1 style=rounded]
-          "]p.in" [shape=circle style=filled class="state initial" color="black" fillcolor="black" fixedsize=true height=0.15 label=""]
-          "]p.in" -> "p.usr" [label="\"usr\"   \l" class="transition"]
-          "]p.in" -> "p.*" [label="any   \l" class="transition"]
+digraph {
+  S_GRAPH
+  initial [S_INITIAL]
 
-      }
-      subgraph "cluster_query" {
-        class="state regular" label= <
-        <table cellborder="0" border="0">
-          <tr><td>query</td></tr>
-        </table>
-        > style=dashed penwidth=1.0
-        "query" [shape=point style=invis margin=0 width=0 height=0 fixedsize=true]
-          "q.usr" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">usr</td></tr>
-            </table>
-          >]
-          "q.usr" -> "q.bin" [label="\"bin\"   \l" class="transition"]
-          "q.usr" -> "q.local" [label="\"local\"   \l" class="transition"]
-          "q.bin" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">bin</td></tr>
-            </table>
-          >]
-          "q.bin" -> "q.bash" [label="\"bash\"   \l" class="transition"]
-          "q.bash" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7"><i>bash</i></td></tr>
-            </table>
-          > peripheries=1 style=rounded]
-          "q.local" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">local</td></tr>
-            </table>
-          >]
-          "q.local" -> "q.lbin" [label="\"bin\"   \l" class="transition"]
-          "q.lbin" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7">bin</td></tr>
-            </table>
-          >]
-          "q.lbin" -> "q.trie_match" [label="\"trie-match\"   \l" class="transition"]
-          "q.trie_match" [margin=0 class="state regular" label= <
-            <table align="center" cellborder="0" border="2" style="rounded" width="48">
-              <tr><td width="48" cellpadding="7"><i>trie-match</i></td></tr>
-            </table>
-          > peripheries=1 style=rounded]
-          "]q.in" [shape=circle style=filled class="state initial" color="black" fillcolor="black" fixedsize=true height=0.15 label=""]
-          "]q.in" -> "q.usr" [label="\"usr\"   \l" class="transition"]
+  subgraph {
+    S_CLUSTER
+    label="matching by parallel simulation"
 
-      }
+    subgraph {ENTER_NAMESPACE(p)
+      S_CLUSTER style="dashed"
+      label="pattern"
+
+      p_in [S_INITIAL]
+      NAMESPACED_NODES(usr bin sbin bash cron trie-match *)
+      "p_trie-match" [S_ACCEPT]
+      p_cron [S_ACCEPT]
+      p_bash [S_ACCEPT]
+
+      TR_PLUS(in, *)
+      TR_LIT(*, trie-match)
+
+      TR_LIT(in, usr)
+      TR_LIT(usr, sbin)
+      TR_LIT(sbin, cron)
+      TR_LIT(usr, bin)
+      TR_LIT(bin, bash)
+
+      EXIT_NAMESPACE
+    }
+
+    subgraph {ENTER_NAMESPACE(q)
+      S_CLUSTER style="dashed"
+      label="query"
+
+      q_in [S_INITIAL]
+      NAMESPACED_NODES(usr bin bash local trie-match lbin)
+      q_lbin [label="bin"] // name and label don't match :)
+
+      q_bash [S_ACCEPT]
+      "q_trie-match" [S_ACCEPT]
+
+      TR_LIT(in, usr)
+      TR_LIT(usr, bin)
+      TR_LIT(bin, bash)
+
+      TR_LIT(usr, local)
+      TR_LIT(lbin, trie-match)
+      TR_LIT2(local, lbin, bin)
+
+      EXIT_NAMESPACE
+    }
 
   }
-  "]in" [shape=rect fixedsize=true label=" " style=filled class="state fork" color="black" fillcolor="black" width=0.1]
 
-  "]in" -> "]p.in" [label="    \l" class="transition"]
-  "]in" -> "]q.in" [label="    \l" class="transition"]
+  initial -> p_in
+  initial -> q_in
 }

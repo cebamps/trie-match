@@ -24,6 +24,10 @@
           haskell-language-server
         ];
       };
+      docs = pkgs.mkShell {
+        meta.description = "Tools needed to build the diagrams in /doc.";
+        packages = [pkgs.m4 pkgs.graphviz-nox];
+      };
     });
   };
 }

@@ -1,36 +1,15 @@
-digraph "state transitions" {
-  fontname="Helvetica" fontsize=12 penwidth=2.0 splines=true ordering=out compound=true overlap=scale nodesep=0.3 ranksep=0.1 rankdir=LR
-  node [shape=plaintext style=filled fillcolor="#FFFFFF01" fontname=Helvetica fontsize=12 penwidth=2.0]
-  edge [fontname=Helvetica fontsize=10]
+include(defs.m4)
 
-  subgraph "cluster_simple_tree" {
-    class="state regular" label= <
-    <table cellborder="0" border="0">
-      <tr><td>**.x, **.y</td></tr>
-    </table>
-    > style=rounded penwidth=2.0
-    "simple_tree" [shape=point style=invis margin=0 width=0 height=0 fixedsize=true]
-      "initial" [shape=circle style=filled class="state initial" color="black" fillcolor="black" fixedsize=true height=0.15 label=""]
-      "initial" -> "**" [label="    \l" class="transition"]
-      "**" [margin=0 class="state regular" label= <
-        <table align="center" cellborder="0" border="2" style="rounded" width="48">
-          <tr><td width="48" cellpadding="7">**</td></tr>
-        </table>
-      >]
-      "**" -> "**" [label="any   \l" class="transition"]
-      "**" -> "x" [label="\"x\"   \l" class="transition"]
-      "**" -> "y" [label="\"y\"   \l" class="transition"]
-      "x" [margin=0 class="state regular" label= <
-        <table align="center" cellborder="0" border="2" style="rounded" width="48">
-          <tr><td width="48" cellpadding="7">x</td></tr>
-        </table>
-      >]
-      "y" [margin=0 class="state regular" label= <
-        <table align="center" cellborder="0" border="2" style="rounded" width="48">
-          <tr><td width="48" cellpadding="7">y</td></tr>
-        </table>
-      >]
+digraph {
+  S_GRAPH
+  subgraph {
+    S_CLUSTER
+    label="**.x, **.y"
 
+    initial [S_INITIAL]
+
+    TR_STAR(initial, **)
+    TR_LIT(**, x)
+    TR_LIT(**, y)
   }
-
 }
