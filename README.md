@@ -16,22 +16,24 @@ For these two input files
 
 ```console
 $ cat patterns.txt
-foo.**.bar
-foo.*.baz.*
+foo.**.bar	pattern 1
+foo.*.baz.*	pattern 2
 
 $ cat queries.txt
-foo.bar
-foo.baz
-foo.hello.baz.world
+foo.bar	query 1
+foo.baz	query 2
+foo.hello.baz.world	query 3
 ```
 
 we find two matches:
 
 ```console
 $ trie-match -p patterns.txt -q queries.txt
-foo.hello.baz.world	foo.*.baz.*
-foo.bar	foo.**.bar
+foo.hello.baz.world	foo.*.baz.*	query 3	pattern 2
+foo.bar	foo.**.bar	query 1	pattern 1
 ```
+
+(Note that the input and output use tabs as column separators.)
 
 The search avoids repeating prefix matches, so `foo` is only matched once. This
 makes the search more efficient than pair-wise matching for large inputs.
