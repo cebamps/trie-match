@@ -1,3 +1,7 @@
+<p align="center">
+<img height="256" src="logo/logo.png"/>
+</p>
+
 # trie-match
 
 `trie-match` is a command-line tool that finds intersections of string tries,

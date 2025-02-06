@@ -28,6 +28,15 @@
         meta.description = "Tools needed to build the diagrams in /doc.";
         packages = [pkgs.m4 pkgs.graphviz-nox];
       };
+      logo = pkgs.mkShell {
+        meta.description = "Tools needed to run the logo.hs Cabal script and its output.";
+        packages = with pkgs.haskellPackages; [
+          (ghcWithPackages (p: with p; [random mtl]))
+          cabal-install
+          haskell-language-server
+          pkgs.graphviz-nox
+        ];
+      };
     });
   };
 }
