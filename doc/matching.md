@@ -43,7 +43,7 @@ in the NFA, resulting in a tree structure. For example, for the two patterns
 failure state. It is understood that the state at the end of each branch should
 transition to a failure state on any further input (in addition to the usual
 self-transition for `*` and `**`). For example, the NFA for `x` should reject
-the three-token input `(x, y)`, though the NFA for `*` should still accept it.
+the two-token input `(x, y)`, though the NFA for `*` should still accept it.
 
 ## Matching
 
