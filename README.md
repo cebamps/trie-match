@@ -60,6 +60,16 @@ cabal install
 Ensure that GHC and Cabal are properly set up before using this method. More
 details can be found at [Haskell.org](https://www.haskell.org/get-started/).
 
+This should work under GHC 9.6, 9.8, and 9.10 at least.
+
+### Using Docker
+
+A Docker file is provided. It supports an optional `GHC_VERSION` build arg.
+
+```sh
+docker build -t trie-match .
+```
+
 ## Usage
 
 ```console
