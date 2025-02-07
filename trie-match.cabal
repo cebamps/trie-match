@@ -1,55 +1,58 @@
-cabal-version:      3.0
-name:               trie-match
-version:            0.1.0.0
-license:            BSD-3-Clause
-author:             Cédric Bamps
-build-type:         Simple
+cabal-version: 3.0
+name:          trie-match
+version:       0.1.0.0
+license:       BSD-3-Clause
+author:        Cédric Bamps
+build-type:    Simple
 
 common warnings
-    ghc-options: -Wall
+  ghc-options: -Wall
 
 library
-    import:           warnings
-    exposed-modules:
-      , CLI
-      , Options
-      , Parse
-      , Pattern
-      , Search
-      , Trie
-    build-depends:
-      , base ^>=4.18.2.1
-      , bytestring
-      , containers
-      , megaparsec
-      , optparse-applicative
-      , recursion-schemes
-      , text
-    hs-source-dirs:   src
-    default-language: GHC2021
-    default-extensions:
-      , LambdaCase
-      , OverloadedStrings
-      , TypeFamilies
+  import:             warnings
+  exposed-modules:
+    CLI
+    Options
+    Parse
+    Pattern
+    Search
+    Trie
+
+  build-depends:
+    , base ^>=4.18.2.1
+    , bytestring
+    , containers
+    , megaparsec
+    , optparse-applicative
+    , recursion-schemes
+    , text
+
+  hs-source-dirs:     src
+  default-language:   GHC2021
+  default-extensions:
+    LambdaCase
+    OverloadedStrings
+    TypeFamilies
 
 executable trie-match
-    import:           warnings
-    main-is:          Main.hs
-    build-depends:
-      , base ^>=4.18.2.1
-      , trie-match
-    hs-source-dirs:   app
-    default-language: GHC2021
+  import:           warnings
+  main-is:          Main.hs
+  build-depends:
+    , base ^>=4.18.2.1
+    , trie-match
+
+  hs-source-dirs:   app
+  default-language: GHC2021
 
 test-suite trie-match-test
-    import:           warnings
-    main-is:          test.hs
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    default-language: GHC2021
-    build-depends:
-      , base ^>=4.18.2.1
-      , trie-match
-      , tasty
-      , tasty-hunit
-      , text
+  import:           warnings
+  main-is:          test.hs
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  default-language: GHC2021
+  build-depends:
+    , base ^>=4.18.2.1
+    , trie-match
+    , tasty
+    , tasty-hunit
+    , text
