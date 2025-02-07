@@ -1,0 +1,2 @@
+# avoid parse failure on "pattern" in Pattern.hs
+- arguments: [-XNoPatternSynonyms]
