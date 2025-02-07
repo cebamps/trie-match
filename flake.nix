@@ -22,6 +22,8 @@
           cabal-install
           ghcid
           haskell-language-server
+          cabal-fmt
+          cabal-plan-bounds
         ];
       };
       docs = pkgs.mkShell {
