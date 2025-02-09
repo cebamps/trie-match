@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 module Pattern
   (
     -- * Types
@@ -6,6 +7,7 @@ module Pattern
     Glob (..),
     -- * Matching
     globMatch,
+    globGlobMatch,
     -- * String representation
     globToString,
     patternToString,
@@ -54,6 +56,33 @@ globMatch g = case globUncons g of
   Nothing -> T.null
   Just (GSLit gt, g') -> maybe False (globMatch g') . T.stripPrefix gt
   Just (GSStar, g') -> any (globMatch g') . T.tails
+
+textOrNothing :: Text -> Maybe Text
+textOrNothing "" = Nothing
+textOrNothing x = Just x
+
+stripCommonPrefix :: Text -> Text -> Maybe (Text, Text)
+stripCommonPrefix t1 t2 = (\(_,s1,s2) -> (s1,s2)) <$> T.commonPrefixes t1 t2
+
+stripCommonSuffix :: Text -> Text -> Maybe (Text, Text)
+stripCommonSuffix t1 t2 = both T.reverse <$> stripCommonPrefix (T.reverse t1) (T.reverse t2)
+  where
+    both f (x,y) = (f x, f y)
+
+globGlobMatch :: Glob -> Glob -> Bool
+globGlobMatch (GLit t1) (GLit t2) = t1 == t2
+globGlobMatch (GLit (fromMaybe "" -> t)) g@(GGlob {}) = globMatch g t
+globGlobMatch g@(GGlob {}) (GLit (fromMaybe "" -> t)) = globMatch g t
+globGlobMatch (GGlob (Just h1) ts1 mt1) (GGlob (Just h2) ts2 mt2) = case stripCommonPrefix h1 h2 of
+  Just (textOrNothing -> mh1, textOrNothing -> mh2) -> globGlobMatch (GGlob mh1 ts1 mt1) (GGlob mh2 ts2 mt2)
+  Nothing -> False
+globGlobMatch (GGlob mh1 ts1 (Just t1)) (GGlob mh2 ts2 (Just t2)) = case stripCommonSuffix t1 t2 of
+  Just (textOrNothing -> mt1, textOrNothing -> mt2) -> globGlobMatch (GGlob mh1 ts1 mt1) (GGlob mh2 ts2 mt2)
+  Nothing -> False
+globGlobMatch (GGlob Nothing _ _) (GGlob _ _ Nothing) = True
+globGlobMatch (GGlob _ _ Nothing) (GGlob Nothing _ _) = True
+globGlobMatch (GGlob (Just _) _ (Just _)) (GGlob Nothing _ Nothing) = True
+globGlobMatch (GGlob Nothing _ Nothing) (GGlob (Just _) _ (Just _)) = True
 
 globToString :: Glob -> Text
 globToString = T.intercalate "*" . litBits

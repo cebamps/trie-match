@@ -1,4 +1,4 @@
-module Parse (parsePatternLine, parseLitPatternLine) where
+module Parse (parsePatternLine, parseLitPatternLine, parseGlob) where
 
 import Control.Applicative ((<|>))
 import Control.Arrow (left)
@@ -38,6 +38,9 @@ glob = do
         GLit mt -> return $ GGlob mh [] mt
         GGlob (Just h) ts mt -> return $ GGlob mh (h:ts) mt
         GGlob Nothing _ _ -> error "should not happen"
+
+parseGlob :: Text -> Either String Glob
+parseGlob = left errorBundlePretty . parse (glob <* eof) ""
 
 -- pattern
 

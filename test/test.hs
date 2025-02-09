@@ -10,12 +10,13 @@ import Search
 import Test.Tasty
 import Test.Tasty.HUnit
 import Trie
+import Data.Function (on)
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [patternParseTests, queryParseTests, searchLitTests, patternModTests]
+tests = testGroup "Tests" [patternParseTests, queryParseTests, globGlobMatchTests, searchLitTests, patternModTests]
 
 patternParseTests :: TestTree
 patternParseTests =
@@ -76,6 +77,58 @@ queryParseTests =
     ]
   where
     x `parsesTo` g = parseLitPatternLine x @?= Right g
+
+globGlobMatchTests :: TestTree
+globGlobMatchTests =
+  testGroup
+    "Glob-glob match (and symmetry under flip and reversal)"
+    [ "" @~ "",
+      "foo" @~ "foo",
+      "foo" @/~ "fooo",
+      "*" @~ "*",
+      "*" @~ "",
+      "*f*o*o*" @~ "foo",
+      "*f*o*o*" @/~ "bar",
+      "foo" @~ "*",
+      "foo*" @~ "*bar",
+      "foo*" @~ "foo*bar",
+      "*bar" @~ "foo*bar",
+      "*foo*" @~ "*bar*",
+      "*foo*" @~ "foo*bar",
+      "*bar*" @~ "foo*bar",
+      "fo*bar" @~ "foo*bar",
+      "fo*bar" @/~ "foo*baz",
+      "*" @~ "foo*bar",
+      "foo" @/~ "bar",
+      "foo" @/~ "",
+      "*foo*" @/~ ""
+    ]
+  where
+    x @~ y =
+      testCase (show x <> " matches " <> show y) $
+        trySymReverseMatch x y >>= assertEqual "Globs do not match" True
+    x @/~ y =
+      testCase (show x <> " does not match " <> show y) $
+        trySymReverseMatch x y >>= assertEqual "Globs do not match" False
+    symMatch gx gy = do
+      let fwd = globGlobMatch gx gy
+          bwd = if gx == gy then fwd else globGlobMatch gy gx
+      if fwd /= bwd
+        then assertFailure "Glob match is asymmetric"
+        else return fwd
+    -- | Parses, checks that matching is symmetric, and returns the result.
+    -- This makes two tests from one.
+    trySymMatch x y =
+      (liftA2 (,) `on` parseOrFailTest parseGlob) x y >>= uncurry symMatch
+    -- | Checks that the outcome of a match stays the same under reversal of
+    -- arguments and reversal of the texts before parsing, and returns the
+    -- result. This makes four tests from one.
+    trySymReverseMatch x y = do
+      fwd <- trySymMatch x y
+      bwd <- trySymMatch (T.reverse x) (T.reverse y)
+      if fwd /= bwd
+        then assertFailure "Match of reversed globs failed"
+        else return fwd
 
 searchLitTests :: TestTree
 searchLitTests =
