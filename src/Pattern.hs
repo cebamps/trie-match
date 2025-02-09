@@ -50,10 +50,10 @@ globUncons (GGlob Nothing (t : ts) mt) = Just (GSStar, GGlob (Just t) ts mt)
 globUncons (GGlob (Just t) ts mt) = Just (GSLit t, GGlob Nothing ts mt)
 
 globMatch :: Glob -> Text -> Bool
-globMatch g t = case globUncons g of
-  Nothing -> T.null t
-  Just (GSLit gt, g') -> maybe False (globMatch g') (T.stripPrefix gt t)
-  Just (GSStar, g') -> any (globMatch g') (T.tails t)
+globMatch g = case globUncons g of
+  Nothing -> T.null
+  Just (GSLit gt, g') -> maybe False (globMatch g') . T.stripPrefix gt
+  Just (GSStar, g') -> any (globMatch g') . T.tails
 
 globToString :: Glob -> Text
 globToString = T.intercalate "*" . litBits
