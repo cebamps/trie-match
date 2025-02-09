@@ -5,15 +5,12 @@ import Control.Arrow (left)
 import Data.Functor (void)
 import Data.Text (Text)
 import Data.Void (Void)
-import Pattern (GlobSegment (..), Pattern, PatternSegment (..))
-import Text.Megaparsec (Parsec, eof, errorBundlePretty, lookAhead, many, option, parse, sepBy, takeRest, takeWhile1P, takeWhileP, try)
+import Pattern (Glob (..), Pattern, PatternSegment (..))
+import Text.Megaparsec (Parsec, eof, errorBundlePretty, lookAhead, notFollowedBy, option, parse, sepBy, takeRest, takeWhileP, try)
 import Text.Megaparsec.Char (char)
 import Prelude hiding (takeWhile)
 
 type Parser = Parsec Void Text
-
-takeWhile1 :: (Char -> Bool) -> Parser Text
-takeWhile1 = takeWhile1P Nothing
 
 takeWhile :: (Char -> Bool) -> Parser Text
 takeWhile = takeWhileP Nothing
@@ -23,16 +20,24 @@ followedByAnnotation p = (,) <$> p <*> ("" <$ eof <|> char '\t' *> takeRest)
 
 -- glob
 
--- takeWhile1 prevents parsing an empty GLit, not only because it would get
--- stuck in a loop, but also because we would rather discard them (e.g.,
--- preferring @[]@ over @[GLit ""]@).
-globSegment :: Parser GlobSegment
-globSegment = (GStar <$ char '*') <|> (GLit <$> takeWhile1 isLitChar)
+glob :: Parser Glob
+glob = do
+  x <- textOrNothing <$> takeWhile isLitChar
+  recursiveGlob x <|> return (GLit x)
   where
     isLitChar c = c `notElem` ['*', '.', '\t']
-
-glob :: Parser [GlobSegment]
-glob = many globSegment
+    textOrNothing "" = Nothing
+    textOrNothing t = Just t
+    -- glob that leads with an asterisk
+    recursiveGlob :: Maybe Text -> Parser Glob
+    recursiveGlob mh = do
+      _ <- char '*'
+      _ <- notFollowedBy (char '*')
+      g <- glob
+      case g of
+        GLit mt -> return $ GGlob mh [] mt
+        GGlob (Just h) ts mt -> return $ GGlob mh (h:ts) mt
+        GGlob Nothing _ _ -> error "should not happen"
 
 -- pattern
 

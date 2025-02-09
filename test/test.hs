@@ -35,16 +35,24 @@ patternParseTests =
           `parsesTo` ([pEmpty], ""),
       testCase "Complex pattern with globs and stars" $
         "*.f*o.bar"
-          `parsesTo` ([PPlus, PGlob [GLit "f", GStar, GLit "o"], PGlob [GLit "bar"]], ""),
+          `parsesTo` ([PPlus, pGlob (Just "f") [] (Just "o"), pLit "bar"], ""),
       testCase "Complex glob" $
         "f*o*"
-          `parsesTo` ([PGlob [GLit "f", GStar, GLit "o", GStar]], ""),
+          `parsesTo` ([pGlob (Just "f") ["o"] Nothing], ""),
+      -- parse error indicates that '*' is not expected
+      testCase "Illegal double-star within glob fails to parse" $
+        "f**" `failsWith`  "1:3:\n  |\n1 | f**\n  |   ^\nunexpected '*'\n",
+      -- parse error indicates that we thought it was a PStar ("**") but the
+      -- segment is still not over
+      testCase "Illegal double-star at start of glob fails to parse" $
+        "**o" `failsWith` "1:3:\n  |\n1 | **o\n  |   ^\nunexpected 'o'\nexpecting '.' or end of input\n",
       testCase "Annotation" $
         "foo*bar.baz with a space\tthis is the annotation.\tand this too"
-          `parsesTo` ([PGlob [GLit "foo", GStar, GLit "bar"], pLit "baz with a space"], "this is the annotation.\tand this too")
+          `parsesTo` ([pGlob (Just "foo") [] (Just "bar"), pLit "baz with a space"], "this is the annotation.\tand this too")
     ]
   where
     x `parsesTo` g = parsePatternLine x @?= Right g
+    x `failsWith` e = parsePatternLine x @?= Left e
 
 queryParseTests :: TestTree
 queryParseTests =
@@ -221,11 +229,15 @@ insertStarTests =
 
 -- * Utility
 
-pEmpty :: PatternSegment
-pEmpty = PGlob []
-
 pLit :: Text -> PatternSegment
-pLit x = PGlob [GLit x]
+pLit "" = PGlob (GLit Nothing)
+pLit x = PGlob (GLit (Just x))
+
+pEmpty :: PatternSegment
+pEmpty = pLit ""
+
+pGlob :: Maybe Text -> [Text] -> Maybe Text -> PatternSegment
+pGlob mh ts mt = PGlob (GGlob mh ts mt)
 
 parsePattern :: Text -> Either String Pattern
 parsePattern = fmap fst . parsePatternLine
