@@ -1,4 +1,20 @@
-module Pattern where
+module Pattern
+  (
+    -- * Types
+    Pattern,
+    PatternSegment (..),
+    Glob (..),
+    -- * Matching
+    globMatch,
+    -- * String representation
+    globToString,
+    patternToString,
+    -- * Manipulation
+    compressStars,
+    insertStars,
+    asPrefix,
+  )
+where
 
 import Control.Monad (void)
 import Data.Either (isRight)
