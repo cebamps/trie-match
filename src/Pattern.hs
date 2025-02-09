@@ -16,16 +16,9 @@ module Pattern
   )
 where
 
-import Control.Monad (void)
-import Data.Either (isRight)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, eof, manyTill, parse)
-import Text.Megaparsec.Char (string)
-
-type Parser = Parsec Void Text
 
 type Pattern = [PatternSegment]
 
@@ -56,19 +49,11 @@ globUncons (GGlob Nothing [] mt) = Just (GSStar, GLit mt)
 globUncons (GGlob Nothing (t : ts) mt) = Just (GSStar, GGlob (Just t) ts mt)
 globUncons (GGlob (Just t) ts mt) = Just (GSLit t, GGlob Nothing ts mt)
 
-globSegmentAsParser :: Glob -> Parser ()
-globSegmentAsParser = refold prepend globUncons eof
-  where
-    refold :: (a -> c -> c) -> (b -> Maybe (a, b)) -> c -> b -> c
-    -- being cheeky; I could instead just define it in two steps as
-    -- refold folder unfolder q = foldr folder q . unfoldr unfolder
-    refold folder unfolder q = h where h = maybe q (uncurry folder . fmap h) . unfolder
-    prepend :: GlobSegment -> Parser () -> Parser ()
-    prepend (GSLit x) p = string x *> p
-    prepend GSStar p = void $ manyTill anySingle p
-
 globMatch :: Glob -> Text -> Bool
-globMatch g = isRight . parse (globSegmentAsParser g) ""
+globMatch g t = case globUncons g of
+  Nothing -> T.null t
+  Just (GSLit gt, g') -> maybe False (globMatch g') (T.stripPrefix gt t)
+  Just (GSStar, g') -> any (globMatch g') (T.tails t)
 
 globToString :: Glob -> Text
 globToString = T.intercalate "*" . litBits
