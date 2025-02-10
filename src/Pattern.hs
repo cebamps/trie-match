@@ -1,10 +1,11 @@
 {-# LANGUAGE ViewPatterns #-}
 module Pattern
   (
-    -- * Types
+    -- * Types and constructors
     Pattern,
     PatternSegment (..),
     Glob (..),
+    psLit,
     -- * Matching
     globMatch,
     globGlobMatch,
@@ -56,6 +57,9 @@ globMatch g = case globUncons g of
   Nothing -> T.null
   Just (GSLit gt, g') -> maybe False (globMatch g') . T.stripPrefix gt
   Just (GSStar, g') -> any (globMatch g') . T.tails
+
+psLit :: Text -> PatternSegment
+psLit = PGlob . GLit . textOrNothing
 
 textOrNothing :: Text -> Maybe Text
 textOrNothing "" = Nothing
