@@ -32,6 +32,7 @@ options = do
           <> short 'p'
           <> metavar "FILENAME"
           <> help "pattern file"
+          <> action "file"
       )
   queryPath <-
     option
@@ -40,6 +41,7 @@ options = do
           <> short 'q'
           <> metavar "FILENAME"
           <> help "query file"
+          <> action "file"
       )
   patternsArePrefixes <-
     switch

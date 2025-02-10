@@ -24,6 +24,10 @@
           haskell-language-server
           cabal-fmt
           cabal-plan-bounds
+          # used to test bash completions in direnv; see
+          # https://github.com/nix-community/nix-direnv/issues/384
+          # https://discourse.nixos.org/t/interactive-bash-with-nix-develop-flake/15486
+          pkgs.bashInteractive
         ];
       };
       docs = pkgs.mkShell {
