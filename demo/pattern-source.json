@@ -1,0 +1,17 @@
+[
+  {
+    "pattern": "foo.bar.*.title",
+    "path": "src/foo/bar.txt",
+    "line_no": "123"
+  },
+  {
+    "pattern": "foo.bar.*.subtitle",
+    "path": "src/foo/bar.txt",
+    "line_no": "124"
+  },
+  {
+    "pattern": "foo.qux.something",
+    "path": "src/foo/qux.txt",
+    "line_no": "42"
+  }
+]

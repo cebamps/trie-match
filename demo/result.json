@@ -1,0 +1,47 @@
+[
+{
+  "query": "foo.bar.x.subtitle",
+  "pattern": "foo.bar.*.subtitle",
+  "data_query": "Subtitle x",
+  "data_pattern": {
+    "path": "src/foo/bar.txt",
+    "line_no": "124"
+  }
+},
+{
+  "query": "foo.bar.x.title",
+  "pattern": "foo.bar.*.title",
+  "data_query": "Title x",
+  "data_pattern": {
+    "path": "src/foo/bar.txt",
+    "line_no": "123"
+  }
+},
+{
+  "query": "foo.bar.y.subtitle",
+  "pattern": "foo.bar.*.subtitle",
+  "data_query": "Subtitle y",
+  "data_pattern": {
+    "path": "src/foo/bar.txt",
+    "line_no": "124"
+  }
+},
+{
+  "query": "foo.bar.y.title",
+  "pattern": "foo.bar.*.title",
+  "data_query": "Title y",
+  "data_pattern": {
+    "path": "src/foo/bar.txt",
+    "line_no": "123"
+  }
+},
+{
+  "query": "foo.qux.something",
+  "pattern": "foo.qux.something",
+  "data_query": "Something",
+  "data_pattern": {
+    "path": "src/foo/qux.txt",
+    "line_no": "42"
+  }
+}
+]

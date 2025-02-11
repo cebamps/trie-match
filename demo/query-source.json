@@ -1,0 +1,18 @@
+{
+  "foo": {
+    "bar": {
+      "x": {
+        "title": "Title x",
+        "subtitle": "Subtitle x"
+      },
+      "y": {
+        "title": "Title y",
+        "subtitle": "Subtitle y"
+      }
+    },
+    "qux": {
+      "something": "Something",
+      "else": "Something else"
+    }
+  }
+}
