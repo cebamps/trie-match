@@ -10,6 +10,7 @@ data PathOrStdin = POSPath FilePath | POSStdin deriving (Show)
 data Options = Options
   { patternPath :: PathOrStdin,
     queryPath :: PathOrStdin,
+    queriesUsePatternLanguage :: Bool,
     patternsArePrefixes :: Bool,
     multiSegmentGlobs :: Bool
   }
@@ -40,6 +41,12 @@ options = do
           <> short 'q'
           <> metavar "FILENAME"
           <> help "query file"
+      )
+  queriesUsePatternLanguage <-
+    switch
+      ( long "rich-queries"
+          <> short 'G' -- mimics grep and sed
+          <> help "interpret queries as patterns"
       )
   patternsArePrefixes <-
     switch

@@ -7,15 +7,15 @@ import Data.Text qualified as T (intercalate, lines, null)
 import Data.Text.IO qualified as T
 import Options (Options (..), PathOrStdin (POSPath, POSStdin), parseOptions)
 import Parse (parseLitPatternLine, parsePatternLine)
-import Pattern (Pattern, asPrefix, compressStars, insertStars, patternToString)
-import Search (SearchLoc (..), SearchResult (..), searchLit)
+import Pattern (Pattern, asPrefix, compressStars, insertStars, patternToString, psLit)
+import Search (SearchLoc (..), SearchResult (..), search)
 import Trie qualified (fromList)
 
 run :: IO ()
 run = do
   opt@Options {patternPath, queryPath} <- parseOptions
 
-  queryTrie <- Trie.fromList . pathToLeaves <$> readAndParse parseLitPatternLine queryPath
+  queryTrie <- Trie.fromList . pathToLeaves <$> readAndParse (parseQueryLine opt) queryPath
   -- TODO: Pattern mods can collapse paths that can be different in the first
   -- place (e.g., @a*.b@ and @a*.**.b@ under 'multiSegmentGlobs'), and lose
   -- annotations in the process. This could be addressed.
@@ -23,7 +23,7 @@ run = do
   -- TODO: unit tests for this
   patternTrie <- Trie.fromList . (fmap . first $ patternMods opt) . pathToLeaves <$> readAndParse parsePatternLine patternPath
 
-  let results = searchLit patternTrie queryTrie
+  let results = search patternTrie queryTrie
   mapM_ (T.putStrLn . resultLine) results
   where
     -- stores the original key path into the trie value along with the value
@@ -33,12 +33,19 @@ run = do
       let (ppath, pvalue) = svalue p
           (qpath, qvalue) = svalue q
        in (T.intercalate "\t" . trim)
-            [ T.intercalate "." qpath,
+            [ patternToString qpath,
               patternToString ppath,
               qvalue,
               pvalue
             ]
     trim = dropWhileEnd T.null
+
+-- | parses a query as a literal pattern or as a general pattern depending on options
+parseQueryLine :: Options -> Text -> Either String (Pattern, Text)
+parseQueryLine (Options {queriesUsePatternLanguage = True}) = parsePatternLine
+parseQueryLine (Options {queriesUsePatternLanguage = False}) = mapParsedKey psLit parseLitPatternLine
+  where
+    mapParsedKey = fmap . fmap . first . fmap
 
 patternMods :: Options -> Pattern -> Pattern
 patternMods (Options {patternsArePrefixes, multiSegmentGlobs}) =
