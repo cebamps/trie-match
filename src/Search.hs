@@ -12,6 +12,7 @@ import Trie (Trie (..), children, lookup, mapKeys)
 import Prelude hiding (lookup)
 import Data.Function ((&))
 import Data.List (singleton)
+import Control.Applicative (empty)
 
 data SearchLoc c a = SearchLoc
   { spath :: [c],
@@ -70,10 +71,10 @@ tAdvancing (p, n) = do
   (pk, p') <- advance p
   case pk of
     PStar -> pure (p', n)
-    PPlus -> (p',) . snd <$> advance n
+    PPlus -> (p',) . snd <$> advanceOrStay n
     -- could optimize literal-to-literal matching here instead of scanning all
     -- children
-    PGlob _ -> (p',) . snd <$> mfilter (patMatch pk . fst) (advance n)
+    PGlob _ -> (p',) . snd <$> mfilter (patMatch pk . fst) (advanceOrStay n)
 
 -- | transitions that keep the pattern state still
 tStaying :: (TState' a, TState' b) -> [(TState' a, TState' b)]
@@ -92,6 +93,14 @@ advance :: TState c a -> [(c, TState c a)]
 advance (path, t) = do
   (k, t') <- children t
   pure (k, (k : path, t'))
+
+-- | advance the state to each child or stay on a star or plus
+advanceOrStay :: TState PatternSegment a -> [(PatternSegment, TState PatternSegment a)]
+advanceOrStay s = advance s <|> stay s
+  where
+    stay s'@(h@PStar : _, _) = pure (h, s')
+    stay s'@(h@PPlus : _, _) = pure (h, s')
+    stay _ = empty
 
 advanceOn :: (Ord c) => c -> TState c a -> [(c, TState c a)]
 advanceOn k (path, t) = do
