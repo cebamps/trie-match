@@ -88,6 +88,17 @@ Available options:
   -h,--help                Show this help text
 ```
 
+Completion scripts are available for Bash, Zsh and fish. See
+[optparse-applicative documentation][compl-doc] and [wiki][compl-wiki] for
+details and inspiration. In short, for Zsh, place the output of
+`trie-match --zsh-completion-script $(which trie-match)` in a file named
+`_trie-match` found in your `$FPATH`.
+
+[compl-doc]:
+  https://hackage.haskell.org/package/optparse-applicative-0.18.1.0#bash-zsh-and-fish-completions
+[compl-wiki]:
+  https://github.com/pcapriotti/optparse-applicative/wiki/Bash-Completion
+
 ## Matching Details
 
 The input files list their patterns and queries list in the form of **input
