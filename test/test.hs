@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
-import Data.List (sort)
+import Data.List (sort, intercalate)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Parse
@@ -11,12 +11,22 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Trie
 import Data.Function (on)
+import Data.Set qualified as Set
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [patternParseTests, queryParseTests, globGlobMatchTests, searchLitTests, patternModTests]
+tests =
+  testGroup
+    "Tests"
+    [ patternParseTests,
+      queryParseTests,
+      globGlobMatchTests,
+      searchLitTests,
+      searchTests,
+      patternModTests
+    ]
 
 patternParseTests :: TestTree
 patternParseTests =
@@ -185,9 +195,71 @@ searchLitTests =
           []
     ]
 
--- | Test a trie search based on a list of patterns and lists of succeeding and
--- failing queries. The approach is borrowed from my Elm implementation.
-testSearchLit ::
+searchTests :: TestTree
+searchTests =
+  testGroup
+    "Search (pattern queries)"
+    [ testCase "tree of literals" $
+        -- difference with Elm implementation: the query ** here is supported and therefore matches
+        testSearch
+          ["a", "a.b.c", "a.b.c.d"]
+          [ ("*", ["a", "a.b.c", "a.b.c.d"]),
+            ("**", ["a", "a.b.c", "a.b.c.d"]),
+            ("*.*", ["a.b.c", "a.b.c.d"]),
+            ("*.b.*", ["a.b.c", "a.b.c.d"]),
+            ("*.c.*", ["a.b.c.d"]),
+            ("*.c", ["a.b.c"]),
+            ("a.*", ["a.b.c", "a.b.c.d"])
+          ]
+          ["*.*.*.*.*", "*.b", "b.*"],
+      testCase "tree with wildcards" $
+        testSearch
+          ["a", "a.*.c", "*.c", "*.*.*.*"]
+          [ ("*", ["a", "a.*.c", "*.c", "*.*.*.*"]),
+            ("*.c", ["a.*.c", "*.c", "*.*.*.*"]),
+            ("*.*", ["a.*.c", "*.c", "*.*.*.*"]),
+            ("*.*.*", ["a.*.c", "*.c", "*.*.*.*"])
+          ]
+          [],
+      testCase "empty tree" $
+        testSearch
+          []
+          []
+          ["*"],
+      testCase "tree with empty string" $
+        testSearch
+          ["", "."]
+          [("*", ["", "."]), ("*.*", ["."])]
+          [],
+      testCase "trivial wildcard tree" $
+        testSearch
+          ["*", "**"]
+          [ ("*", ["*", "**"]),
+            ("*.*", ["*", "**"])
+          ]
+          [],
+      testCase "tree with kleene star segments (**)" $
+        testSearch
+          ["a.*.c", "a.**.c", "a.**.c.*", "a.**.c.**"]
+          [ ("*", ["a.*.c", "a.**.c", "a.**.c.*", "a.**.c.**"]),
+            ("a.*.c", ["a.*.c", "a.**.c", "a.**.c.*", "a.**.c.**"])
+          ]
+          [],
+      testCase "query with globs" $
+        -- difference with Elm implementation: we support globs here
+        testSearch
+          ["a.*.foo", "a.**.foo", "a.*", "a.**.bar"]
+          [ ("*.*o*", ["a.*.foo", "a.**.foo", "a.*"]),
+            ("*.*oo", ["a.*.foo", "a.**.foo", "a.*"]),
+            ("*.*ooo", [ "a.*"]),
+            ("a.*bar*.foo", ["a.*.foo", "a.**.foo", "a.*"]),
+            ("*.*oo*", ["a.*.foo", "a.**.foo", "a.*"]),
+            ("a*.foo",["a.**.foo", "a.*"])
+          ]
+          []
+    ]
+
+type SearchTester =
   -- | Patterns to build the search trie (to be parsed with 'parsePattern')
   [Text] ->
   -- | Queries expected to match the search trie, paired with the patterns they should match.
@@ -195,16 +267,34 @@ testSearchLit ::
   -- | Queries expected not to match the search trie.
   [Text] ->
   Assertion
-testSearchLit patterns matches failures = do
+
+testSearchLit :: SearchTester
+testSearchLit = testSearchUsing parseLitPattern (T.intercalate ".") searchLit
+
+testSearch :: SearchTester
+testSearch = testSearchUsing parsePattern patternToString search
+
+-- | Test a trie search based on a list of patterns and lists of succeeding and
+-- failing queries. The approach is borrowed from my Elm implementation.
+testSearchUsing ::
+  (Ord c) =>
+  -- | Query parsing function
+  (Text -> Either String [c]) ->
+  -- | Query formatting function
+  ([c] -> Text) ->
+  -- | Search function
+  (forall a b. Trie PatternSegment a -> Trie c b -> [SearchResult PatternSegment c a b]) ->
+  SearchTester
+testSearchUsing parser formatter searcher patterns matches failures = do
   qTree <-
     let queries = (fst <$> matches) <> failures
-     in fromList' <$> traverse (parseOrFailTest parseLitPattern) queries
+     in fromList' <$> traverse (parseOrFailTest parser) queries
   pTree <- fromList' <$> traverse (parseOrFailTest parsePattern) patterns
 
   -- for simplicity, reformat the outputs as text too
   let actual =
-        [ (T.intercalate "." (spath qs), patternToString (spath ps))
-          | SearchResult ps qs <- searchLit pTree qTree
+        [ (formatter (spath qs), patternToString (spath ps))
+          | SearchResult ps qs <- searcher pTree qTree
         ]
   let expected =
         [ (qry, pat)
@@ -317,7 +407,14 @@ assertUnorderedEq (sort -> expected) (sort -> actual)
   | expected == actual = pure ()
   | otherwise =
       assertFailure $
-        "Expected equality of lists regardless of order, but got two different lists:\n"
-          <> show expected
-          <> "\n"
-          <> show actual
+        intercalate
+          "\n"
+          [ "Expected equality of lists regardless of order, but got two different lists:",
+            show expected,
+            show actual,
+            "expected - actual: " <> show (diff expected actual),
+            "actual - expected: " <> show (diff actual expected)
+          ]
+  where
+    diff :: (Ord a) => [a] -> [a] -> [a]
+    diff xs ys = Set.toList $ Set.difference (Set.fromList xs) (Set.fromList ys)
