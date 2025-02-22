@@ -15,20 +15,28 @@ run :: IO ()
 run = do
   opt@Options {patternPath, queryPath} <- parseOptions
 
-  queryTrie <- Trie.fromList . pathToLeaves <$> readAndParse (parseQueryLine opt) queryPath
   -- TODO: Pattern mods can collapse paths that can be different in the first
   -- place (e.g., @a*.b@ and @a*.**.b@ under 'multiSegmentGlobs'), and lose
   -- annotations in the process. This could be addressed.
   --
-  -- TODO: unit tests for this
-  patternTrie <- Trie.fromList . (fmap . first $ patternMods opt) . pathToLeaves <$> readAndParse parsePatternLine patternPath
+  -- TODO: write tests for this loading code
+
+  queryTrie <-
+    Trie.fromList
+      . fmap (toLeaf compressStars)
+      <$> readAndParse (parseQueryLine opt) queryPath
+
+  patternTrie <-
+    Trie.fromList
+      . fmap (toLeaf (patternMods opt))
+      <$> readAndParse parsePatternLine patternPath
 
   let results = search patternTrie queryTrie
   mapM_ (T.putStrLn . resultLine) results
   where
-    -- stores the original key path into the trie value along with the value
-    -- read from the file
-    pathToLeaves xs = [(path, (path, ann)) | (path, ann) <- xs]
+    -- transforms the key path, keeping the original alongside the value read
+    -- from the file
+    toLeaf f (path, ann) = (f path, (path, ann))
     resultLine (SearchResult {patternLoc = p, queryLoc = q}) =
       let (ppath, pvalue) = svalue p
           (qpath, qvalue) = svalue q
