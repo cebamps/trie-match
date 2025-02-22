@@ -1,6 +1,6 @@
 module Trie where
 
-import Data.Functor.Foldable (Base, Corecursive (..), Recursive (..))
+import Data.Functor.Foldable (Base, Corecursive (..), Recursive (..), hoist)
 import Data.List (foldl', intercalate)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -52,6 +52,14 @@ fromList' = fromList . fmap (,())
 
 children :: Trie c a -> [(c, Trie c a)]
 children = Map.toList . tChildren
+
+lookup :: (Ord c) => c -> Trie c a -> Maybe (Trie c a)
+lookup c = Map.lookup c . tChildren
+
+-- | Analogue to 'Map.mapKeys', though over key segments rather than full keys.
+-- Be careful with non-injective functions
+mapKeys :: (Ord d) => (c -> d) -> Trie c a -> Trie d a
+mapKeys f = hoist $ \(TrieF v m) -> TrieF v (Map.mapKeys f m)
 
 -- * Recursion schemes
 

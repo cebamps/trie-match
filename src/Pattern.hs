@@ -1,15 +1,27 @@
-module Pattern where
+{-# LANGUAGE ViewPatterns #-}
+module Pattern
+  (
+    -- * Types and constructors
+    Pattern,
+    PatternSegment (..),
+    Glob (..),
+    psLit,
+    -- * Matching
+    globMatch,
+    globGlobMatch,
+    -- * String representation
+    globToString,
+    patternToString,
+    -- * Manipulation
+    compressStars,
+    insertStars,
+    asPrefix,
+  )
+where
 
-import Control.Monad (void)
-import Data.Either (isRight)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Void (Void)
-import Text.Megaparsec (Parsec, anySingle, eof, manyTill, parse)
-import Text.Megaparsec.Char (string)
-
-type Parser = Parsec Void Text
 
 type Pattern = [PatternSegment]
 
@@ -22,31 +34,65 @@ data PatternSegment
     PStar
   deriving (Eq, Ord, Show)
 
-type Glob = [GlobSegment]
-
-data GlobSegment
-  = -- | literal match
-    GLit Text
-  | -- | match zero or more characters
-    GStar
+-- | convention: all texts are non-empty
+data Glob
+  = GLit (Maybe Text)
+  | GGlob (Maybe Text) [Text] (Maybe Text)
   deriving (Eq, Ord, Show)
 
-globSegmentAsParser :: Glob -> Parser ()
-globSegmentAsParser = foldr prepend eof
-  where
-    prepend :: GlobSegment -> Parser () -> Parser ()
-    prepend (GLit x) p = string x *> p
-    prepend GStar p = void $ manyTill anySingle p
+-- | elements used in the representation of a glob as an alternating list of
+-- stars and literals
+data GlobSegment = GSLit Text | GSStar
+
+-- | one step of unfolding a 'Glob' into a list of 'GlobSegment'
+globUncons :: Glob -> Maybe (GlobSegment, Glob)
+globUncons (GLit Nothing) = Nothing
+globUncons (GLit (Just t)) = Just (GSLit t, GLit Nothing)
+globUncons (GGlob Nothing [] mt) = Just (GSStar, GLit mt)
+globUncons (GGlob Nothing (t : ts) mt) = Just (GSStar, GGlob (Just t) ts mt)
+globUncons (GGlob (Just t) ts mt) = Just (GSLit t, GGlob Nothing ts mt)
 
 globMatch :: Glob -> Text -> Bool
-globMatch g = isRight . parse (globSegmentAsParser g) ""
+globMatch g = case globUncons g of
+  Nothing -> T.null
+  Just (GSLit gt, g') -> maybe False (globMatch g') . T.stripPrefix gt
+  Just (GSStar, g') -> any (globMatch g') . T.tails
+
+psLit :: Text -> PatternSegment
+psLit = PGlob . GLit . textOrNothing
+
+textOrNothing :: Text -> Maybe Text
+textOrNothing "" = Nothing
+textOrNothing x = Just x
+
+stripCommonPrefix :: Text -> Text -> Maybe (Text, Text)
+stripCommonPrefix t1 t2 = (\(_,s1,s2) -> (s1,s2)) <$> T.commonPrefixes t1 t2
+
+stripCommonSuffix :: Text -> Text -> Maybe (Text, Text)
+stripCommonSuffix t1 t2 = both T.reverse <$> stripCommonPrefix (T.reverse t1) (T.reverse t2)
+  where
+    both f (x,y) = (f x, f y)
+
+globGlobMatch :: Glob -> Glob -> Bool
+globGlobMatch (GLit t1) (GLit t2) = t1 == t2
+globGlobMatch (GLit (fromMaybe "" -> t)) g@(GGlob {}) = globMatch g t
+globGlobMatch g@(GGlob {}) (GLit (fromMaybe "" -> t)) = globMatch g t
+globGlobMatch (GGlob (Just h1) ts1 mt1) (GGlob (Just h2) ts2 mt2) = case stripCommonPrefix h1 h2 of
+  Just (textOrNothing -> mh1, textOrNothing -> mh2) -> globGlobMatch (GGlob mh1 ts1 mt1) (GGlob mh2 ts2 mt2)
+  Nothing -> False
+globGlobMatch (GGlob mh1 ts1 (Just t1)) (GGlob mh2 ts2 (Just t2)) = case stripCommonSuffix t1 t2 of
+  Just (textOrNothing -> mt1, textOrNothing -> mt2) -> globGlobMatch (GGlob mh1 ts1 mt1) (GGlob mh2 ts2 mt2)
+  Nothing -> False
+globGlobMatch (GGlob Nothing _ _) (GGlob _ _ Nothing) = True
+globGlobMatch (GGlob _ _ Nothing) (GGlob Nothing _ _) = True
+globGlobMatch (GGlob (Just _) _ (Just _)) (GGlob Nothing _ Nothing) = True
+globGlobMatch (GGlob Nothing _ Nothing) (GGlob (Just _) _ (Just _)) = True
 
 globToString :: Glob -> Text
-globToString = T.concat . fmap gsToString
+globToString = T.intercalate "*" . litBits
   where
-    gsToString :: GlobSegment -> Text
-    gsToString GStar = "*"
-    gsToString (GLit x) = x
+    litBits (GLit mt) = [fromMaybe "" mt]
+    litBits (GGlob mt1 ts mt2) = [fromMaybe "" mt1] <> ts <> [fromMaybe "" mt2]
 
 patternToString :: Pattern -> Text
 patternToString = T.intercalate "." . fmap psToString
@@ -77,8 +123,12 @@ insertStars = concatMap $ \case
     | atStart -> [PStar, x]
     | atEnd -> [x, PStar]
     where
-      atStart = listToMaybe g == Just GStar
-      atEnd = listToMaybe (reverse g) == Just GStar
+      atStart = case g of
+        GGlob Nothing _ _ -> True
+        _ -> False
+      atEnd = case g of
+        GGlob _ _ Nothing -> True
+        _ -> False
   x -> [x]
 
 asPrefix :: Pattern -> Pattern
