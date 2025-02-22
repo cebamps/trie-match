@@ -70,6 +70,7 @@ tAdvancing :: (TState' a, TState' b) -> [(TState' a, TState' b)]
 tAdvancing (p, n) = do
   (pk, p') <- advance p
   case pk of
+    -- pattern epsilon transition
     PStar -> pure (p', n)
     PPlus -> (p',) . snd <$> advanceOrStay n
     -- could optimize literal-to-literal matching here instead of scanning all
@@ -79,6 +80,7 @@ tAdvancing (p, n) = do
 -- | transitions that keep the pattern state still
 tStaying :: (TState' a, TState' b) -> [(TState' a, TState' b)]
 tStaying (p, n) = case fst p of
+  -- all cases cover the query epsilon transition
   (PStar : _) -> advanceNeedlesWith advance
   (PPlus : _) -> advanceNeedlesWith advance
   -- end of pattern or glob

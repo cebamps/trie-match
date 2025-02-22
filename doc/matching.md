@@ -73,3 +73,17 @@ The intersection is found to be the two query-pattern pairs
 `usr.bin.bash - usr.bin.bash` and `usr.local.bin.trie-match - *.trie-match`,
 after receiving input tokens `(usr, bin, bash)` and
 `(usr, local, bin, trie-match)` respectively.
+
+### Reasoning about epsilon transitions
+
+The transition leading into a `**` state consumes no input. When simulating the
+pattern and query in parallel, it is useful to distinguish those state
+transitions into a "pattern epsilon" and a "query epsilon", which advance only
+the pattern and query respectively.
+
+Indeed, when a transition into a `**` is available in both the pattern and
+query simultaneously, we will want to consider the transition of the pattern
+alone and of the query alone, hence the distinction. Moreover we don not want
+to consider a third transition that advances both the pattern and query to `**`
+simultaneously, as that is already achieved with the two individual transitions
+in sequence.

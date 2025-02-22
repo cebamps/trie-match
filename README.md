@@ -105,11 +105,13 @@ segment language consists of:
 - **Glob** (any other valid segment) - Matches one query segment, where `*` acts
   as a wildcard for zero or more characters.
 
-A **query expression** follows the same structure but consists only of **literal
-segments**, which are plain text segments where `*` has no special meaning.
+A **query expression** has the same syntax and semantics as a pattern
+expression.
 
-A pattern and query **match** (or **intersect**) when the pattern matches the
-query.
+A pattern and query **match** (or **intersect**) when there exists at least one
+input that both of them accept. In the simpler case where the query only
+consists of literal segments (i.e., of glob type and containing no wildcard),
+the pattern and query match when the pattern accepts the query as an input.
 
 `trie-match` outputs one line per query-pattern intersection, optionally
 followed by the annotation for the query and pattern annotations, all separated
