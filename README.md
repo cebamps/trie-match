@@ -171,6 +171,9 @@ not.
 While annotations in the input are allowed to contain tabs, this can make their
 delimitation ambiguous in the output.
 
+The pattern syntax does not support escaping or custom delimiters. This would be
+useful to implement.
+
 Performance may become an issue in the presence of chains of segments like
 `*.*.*` due to combinatorial explosion, similar to regex. Note however that
 simplifications are applied where patterns are strictly equivalent, for example
