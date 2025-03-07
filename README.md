@@ -40,7 +40,21 @@ makes the search more efficient than pair-wise matching for large inputs.
 
 ## Installation
 
-### Using Nix
+Precompiled binaries are provided for x86_64-linux and aarch64-darwin in the
+GitHub releases.
+
+Preferred method: if you have [mise](https://mise.jdx.dev/) set up, the ubi
+backend can discover and install these binaries:
+
+```sh
+mise use --global ubi:cebamps/trie-match
+```
+
+It is of course also possible to download and run these binaries by hand. Note
+however that they are not signed, which can be annoying with macOS when
+downloaded from a web browser.
+
+### From source, using Nix
 
 `flake.nix` provides a package and devshell, so `nix run`, `nix shell` and
 `nix develop` are all supported.
@@ -49,7 +63,7 @@ makes the search more efficient than pair-wise matching for large inputs.
 nix shell github:cebamps/trie-match
 ```
 
-### Using Cabal
+### From source, using Cabal
 
 A Cabal file is provided.
 
@@ -62,7 +76,7 @@ details can be found at [Haskell.org](https://www.haskell.org/get-started/).
 
 This should work under GHC 9.6, 9.8, and 9.10 at least.
 
-### Using Docker
+### From source, using Docker
 
 A Docker file is provided. It supports an optional `GHC_VERSION` build arg.
 
