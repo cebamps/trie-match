@@ -52,6 +52,16 @@ jobs:
           mkdir -p dist
           cp "$(cabal list-bin trie-match)" dist/trie-match-${{ matrix.arch }}
 
+      - name: Strip executable and compress with upx
+        if: runner.os != 'macOS'
+        uses: svenstaro/upx-action@2.4.1
+        with:
+          files: dist/trie-match-${{ matrix.arch }}
+
+      - name: Strip executable
+        if: runner.os == 'macOS'
+        run: strip dist/trie-match-${{ matrix.arch }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
