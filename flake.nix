@@ -31,7 +31,7 @@
     in {
       default = haskellPackages.shellFor {
         packages = hp: [
-          hp.trie-match
+          (pkgs.haskell.lib.doBenchmark hp.trie-match)
         ];
         nativeBuildInputs = with haskellPackages; [
           cabal-install
@@ -44,6 +44,7 @@
           # https://discourse.nixos.org/t/interactive-bash-with-nix-develop-flake/15486
           pkgs.bashInteractive
         ];
+        doBenchmark = true;
       };
       docs = pkgs.mkShell {
         meta.description = "Tools needed to build the diagrams in /doc.";

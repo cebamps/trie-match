@@ -58,3 +58,17 @@ test-suite trie-match-test
     , tasty ^>=1.4.3
     , tasty-hunit ^>=0.10.2
     , text ^>=2.0.2 || ^>=2.1.1
+
+benchmark trie-match-bench
+  import:           warnings
+  main-is:          bench.hs
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   bench
+  default-language: GHC2021
+  build-depends:
+    , base ^>=4.18.2 || ^>=4.19.2 || ^>=4.20.0
+    , tasty-bench
+    , trie-match
+  -- recommended by tasty to reduce variance from GC (rtsopts) and from
+  -- compiled alignment changes from changed code
+  ghc-options: "-with-rtsopts=-A32m" -fproc-alignment=64
